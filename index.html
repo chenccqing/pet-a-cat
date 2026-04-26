@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>養之前：15年養貓責任模擬</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section id="start-screen" class="screen active">
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">香港首個 15 年養貓責任模擬</p>
+            <h1>養之前</h1>
+            <p class="lead">一隻電子貓，陪你先走完一次「責任」。</p>
+          </div>
+          <div class="hero-cat" aria-hidden="true">
+            <div class="cat-scene">
+              <div class="cat cat-orange cat-coat-orange idle">
+                <img id="hero-cat-image" class="cat-image" alt="" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="setup-panel">
+          <div>
+            <h2>開始前，設定領養條件</h2>
+            <p id="personality-help">幼貓性格未知；領養1歲或3歲以上的貓，可以先知道牠的性格。</p>
+          </div>
+
+          <div class="setup-row">
+            <label>
+              領養起點
+              <select id="start-age-input">
+                <option value="0">幼貓：性格未知，從頭養起</option>
+                <option value="12">1歲貓：已知性格，走到15歲</option>
+                <option value="48">3歲以上成貓：已知性格，只剩10年</option>
+              </select>
+            </label>
+            <label>
+              貓性別
+              <select id="cat-sex-input">
+                <option value="female">女貓</option>
+                <option value="male">男貓</option>
+              </select>
+            </label>
+            <label>
+              貓咪外觀
+              <select id="cat-coat-input">
+                <option value="orange">橘貓</option>
+                <option value="blue">藍貓</option>
+                <option value="tuxedo">藍白/黑白</option>
+                <option value="silver">銀漸層</option>
+                <option value="cream">布偶/奶油色</option>
+                <option value="siamese">暹羅重點色</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="personality-grid" role="radiogroup" aria-label="選擇貓性格">
+            <button class="personality-card selected" data-personality="worker" type="button">
+              <strong>毒舌社畜型</strong>
+              <span>現實、尖銳、港式挖苦</span>
+            </button>
+            <button class="personality-card" data-personality="innocent" type="button">
+              <strong>天真殘酷型</strong>
+              <span>單純地講出最真實的事</span>
+            </button>
+            <button class="personality-card" data-personality="wise" type="button">
+              <strong>可愛老練型</strong>
+              <span>溫柔、成熟、像一位小老師</span>
+            </button>
+            <button class="personality-card" data-personality="philosopher" type="button">
+              <strong>廢柴哲學型</strong>
+              <span>懶洋洋，但句句入肉</span>
+            </button>
+          </div>
+
+          <div class="setup-row">
+            <label>
+              貓名
+              <input id="cat-name-input" maxlength="12" value="阿按揭" />
+            </label>
+            <label>
+              起始養貓基金
+              <select id="fund-input">
+                <option value="250000">HKD $250,000</option>
+                <option value="500000">HKD $500,000</option>
+              </select>
+            </label>
+          </div>
+
+          <button id="start-button" class="primary-button" type="button">開始年度責任體驗</button>
+        </div>
+      </section>
+
+      <section id="game-screen" class="screen">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">每天3分鐘 · 每次一年</p>
+            <h2 id="day-title">第 1 日</h2>
+          </div>
+          <div class="topbar-actions">
+            <button id="fast-forward-button" class="ghost-button" type="button">今日進度</button>
+            <button id="summary-button" class="ghost-button" type="button">看結算</button>
+            <button id="reset-button" class="ghost-button" type="button">重新開始</button>
+          </div>
+        </header>
+
+        <section class="dashboard">
+          <article class="main-stage">
+            <nav class="scene-nav" aria-label="場景切換">
+              <button class="scene-button selected" data-scene="living" type="button">客廳</button>
+              <button class="scene-button" data-scene="balcony" type="button">陽台</button>
+              <button class="scene-button" data-scene="bedroom" type="button">睡房</button>
+              <button class="scene-button" data-scene="garden" type="button">庭院</button>
+              <button class="scene-button" data-scene="shop" type="button">商店</button>
+              <button class="scene-button" data-scene="park" type="button">公園</button>
+              <button class="scene-button" data-scene="friend" type="button">朋友屋企</button>
+            </nav>
+
+            <div class="room">
+              <div id="event-banner" class="event-banner hidden"></div>
+              <div id="scene-label" class="scene-label">客廳</div>
+              <div class="room-hud" aria-hidden="true">
+                <span>🍚 <strong id="hud-hunger">80</strong></span>
+                <span>💧 <strong id="hud-hydration">80</strong></span>
+                <span>💚 <strong id="hud-bonding">30</strong></span>
+                <span>⚠ <strong id="hud-risk">0</strong></span>
+              </div>
+              <div id="room-window" class="room-window room-hotspot" data-room-action="lifestyle" role="button" tabindex="0" aria-label="窗戶安全：外出/旅行安排"><span></span></div>
+              <div id="room-sofa" class="room-sofa"></div>
+              <button id="room-food-bowl" class="room-food-bowl room-hotspot" data-room-action="nutrition" type="button" aria-label="食碗：餵食"></button>
+              <div id="room-cat-tree" class="room-cat-tree room-hotspot hidden" data-room-action="enrichment" role="button" tabindex="0" aria-label="貓爬架：陪玩訓練"></div>
+              <div id="room-cat-bed" class="room-cat-bed room-hotspot hidden" data-room-action="sleep" role="button" tabindex="0" aria-label="貓窩：夜間作息"></div>
+              <div id="room-scratcher" class="room-scratcher room-hotspot hidden" data-room-action="training" role="button" tabindex="0" aria-label="抓板：行為引導"></div>
+              <div id="room-litter" class="room-litter room-hotspot hidden" data-room-action="hygiene" role="button" tabindex="0" aria-label="貓砂盆：清潔整理"></div>
+              <div id="room-light" class="room-light"></div>
+              <div id="room-toy" class="room-toy room-hotspot" data-room-action="enrichment" role="button" tabindex="0" aria-label="玩具：陪玩訓練"></div>
+              <div id="cat" class="cat cat-orange cat-coat-orange idle" aria-label="電子貓">
+                <img id="cat-image" class="cat-image" alt="電子貓" />
+                <span id="cat-mark" class="cat-mark"></span>
+              </div>
+              <div class="floor-shadow"></div>
+            </div>
+
+            <div id="year-brief" class="year-brief"></div>
+
+            <div class="daily-needs care-dock">
+              <div>
+                <span>今年要做</span>
+                <strong id="need-label">幼貓照顧</strong>
+              </div>
+              <ul id="need-list"></ul>
+            </div>
+
+            <div class="speech-wrap">
+              <p id="cat-line" class="speech">你而家覺得我可愛，因為你未見過我凌晨三點跑酷。</p>
+            </div>
+
+            <div id="choice-panel" class="choice-panel hidden">
+              <p class="eyebrow">突發情況</p>
+              <h3 id="choice-title"></h3>
+              <p id="choice-text"></p>
+              <div id="choice-actions" class="choice-actions"></div>
+            </div>
+
+            <div id="shop-panel" class="shop-panel hidden">
+              <div>
+                <p class="eyebrow">商店</p>
+                <h3>道具貨架</h3>
+              </div>
+              <div id="shop-items" class="shop-items"></div>
+            </div>
+
+            <button id="next-day-button" class="primary-button wide" type="button">進入下一年</button>
+          </article>
+
+          <aside class="side-panel">
+            <div class="money-card">
+              <span>剩餘基金</span>
+              <strong id="fund-left">$250,000</strong>
+              <div class="meter money">
+                <span id="fund-meter"></span>
+              </div>
+              <small id="spent-total">累積支出 $0</small>
+            </div>
+
+            <div class="stats-grid">
+              <div>
+                <span>飽肚</span>
+                <strong id="stat-hunger">80</strong>
+              </div>
+              <div>
+                <span>心情</span>
+                <strong id="stat-happiness">80</strong>
+              </div>
+              <div>
+                <span>清潔</span>
+                <strong id="stat-cleanliness">80</strong>
+              </div>
+              <div>
+                <span>水分</span>
+                <strong id="stat-hydration">80</strong>
+              </div>
+              <div>
+                <span>壓力</span>
+                <strong id="stat-stress">20</strong>
+              </div>
+              <div>
+                <span>親密</span>
+                <strong id="stat-bonding">30</strong>
+              </div>
+              <div>
+                <span>活動量</span>
+                <strong id="stat-activity">34</strong>
+              </div>
+              <div>
+                <span>夜間干擾</span>
+                <strong id="stat-sleep">18</strong>
+              </div>
+              <div>
+                <span>砂盆髒污</span>
+                <strong id="stat-poop">18</strong>
+              </div>
+              <div>
+                <span>行為穩定</span>
+                <strong id="stat-discipline">20</strong>
+              </div>
+              <div>
+                <span>健康風險</span>
+                <strong id="stat-risk">0</strong>
+              </div>
+              <div>
+                <span>責任等級</span>
+                <strong id="stat-level">1</strong>
+              </div>
+              <div>
+                <span>今年已用時間</span>
+                <strong id="stat-time">0h</strong>
+                <small id="stat-time-preview"></small>
+              </div>
+              <div>
+                <span>已付出精力</span>
+                <strong id="stat-energy">0</strong>
+                <small id="stat-energy-preview"></small>
+              </div>
+            </div>
+
+            <div class="owner-effort-card">
+              <h3>投入程度判斷</h3>
+              <div id="owner-effort-options" class="owner-effort-options" aria-label="主人投入程度判斷"></div>
+              <p id="owner-effort-note"></p>
+            </div>
+
+            <div class="timeline-card">
+              <div class="timeline-head">
+                <span>貓生進度</span>
+                <strong id="progress-percent">0%</strong>
+              </div>
+              <div class="meter">
+                <span id="year-meter"></span>
+              </div>
+              <p id="stage-label">幼貓期：好可愛，也好燒錢。</p>
+            </div>
+
+            <details class="inventory-card" open>
+              <summary>背包</summary>
+              <ul id="inventory-list"></ul>
+            </details>
+
+            <details class="durability-card">
+              <summary>用品壽命</summary>
+              <ul id="durability-list"></ul>
+            </details>
+
+            <details class="achievement-card" open>
+              <summary>親密成就</summary>
+              <ul id="achievement-list"></ul>
+            </details>
+
+            <details class="history-card">
+              <summary>生命履歷</summary>
+              <ul id="history-list"></ul>
+            </details>
+
+            <details class="log-card">
+              <summary>今日紀錄</summary>
+              <ul id="log-list"></ul>
+            </details>
+          </aside>
+        </section>
+      </section>
+
+      <section id="summary-screen" class="screen">
+        <div class="summary-panel">
+          <p class="eyebrow">貓生模擬完成</p>
+          <h2>走完一生。</h2>
+          <p id="summary-line" class="lead">你陪牠走過了一段壓縮的責任。</p>
+
+          <div class="summary-grid">
+            <div>
+              <span>總支出</span>
+              <strong id="summary-spent">$0</strong>
+            </div>
+            <div>
+              <span>推算一生</span>
+              <strong id="summary-fifteen">$0</strong>
+            </div>
+            <div>
+              <span>陪伴次數</span>
+              <strong id="summary-play">0</strong>
+            </div>
+            <div>
+              <span>忽略天數</span>
+              <strong id="summary-neglect">0</strong>
+            </div>
+            <div>
+              <span>醫療事件</span>
+              <strong id="summary-medical">0</strong>
+            </div>
+            <div>
+              <span>重大選擇</span>
+              <strong id="summary-decisions">0</strong>
+            </div>
+            <div>
+              <span>最終成長</span>
+              <strong id="summary-evolution">日常家貓</strong>
+            </div>
+            <div>
+              <span>埋雷總數</span>
+              <strong id="summary-buried">0</strong>
+            </div>
+            <div>
+              <span>年度回顧</span>
+              <strong id="summary-reviews">0</strong>
+            </div>
+          </div>
+
+          <div class="reflection">
+            <h3>年度回顧留下的紀錄</h3>
+            <ul id="summary-review-list" class="summary-review-list"></ul>
+          </div>
+
+          <div class="reflection">
+            <h3>如果這不是電子貓，而是真實生命，你還會開始嗎？</h3>
+            <div class="reflection-actions">
+              <button id="ready-button" class="primary-button" type="button">我準備好</button>
+              <button id="not-ready-button" class="ghost-button" type="button">我未準備好</button>
+            </div>
+            <p id="reflection-result"></p>
+          </div>
+
+          <button id="play-again-button" class="ghost-button" type="button">再體驗一次</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="game.js"></script>
+  </body>
+</html>
