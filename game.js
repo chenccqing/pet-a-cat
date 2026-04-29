@@ -4,8 +4,7 @@ const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 const SAVE_KEY = "before-cat-life-v4";
 const TOTAL_MONTHS = 180;
 const MONTHS_PER_TURN = 12;
-const YEARS_PER_DAY = 2;
-const TOTAL_PLAY_DAYS = Math.ceil((TOTAL_MONTHS / 12) / YEARS_PER_DAY);
+const YEARS_PER_DAY = TOTAL_MONTHS / 12;
 const YEAR_TIME_BUDGET = 240;
 const ABANDON_HOURS = 36;
 
@@ -30,7 +29,7 @@ function playYearIndex() {
 }
 
 function playDayTotal() {
-  return Math.ceil(playableYears() / YEARS_PER_DAY);
+  return 1;
 }
 
 const money = new Intl.NumberFormat("en-HK", {
@@ -207,6 +206,18 @@ const actionMiniMeta = {
   lifestyle: { item: "🗓", target: "🏠", verb: "安排照顧", hint: "把照顧安排放進行程。", reaction: "calm", done: "安排好了。" },
 };
 
+const evolutionVisualMeta = {
+  "low-lazy": { icon: "…", title: "冷漠街貓", detail: "親密低、活動低，牠學會少期待人。", behavior: "離你遠一點，較少主動互動。", mark: "…", className: "cat-evo-low-lazy" },
+  "mid-lazy": { icon: "🛋", title: "沙發肥貓", detail: "有基本安全感，但活動量和體重管理不足。", behavior: "常常懶躺，食物反應比玩具更快。", mark: "Z", className: "cat-evo-mid-lazy" },
+  "high-lazy": { icon: "♡", title: "黏人抱抱貓", detail: "很信任你，但生活刺激偏少，容易依賴和發胖。", behavior: "會靠近畫面，像在討抱抱。", mark: "♡", className: "cat-evo-high-lazy" },
+  "low-balanced": { icon: "✦", title: "高冷名模貓", detail: "照顧尚可，但關係距離感明顯。", behavior: "坐姿端正、愛舔毛，對你有一點距離。", mark: "✦", className: "cat-evo-low-balanced" },
+  "mid-balanced": { icon: "●", title: "日常家貓", detail: "關係和活動都穩定，是最接近日常的分支。", behavior: "會普通走動、偶爾撒嬌。", mark: "●", className: "cat-evo-mid-balanced" },
+  "high-balanced": { icon: "☘", title: "溫柔守護貓", detail: "親密高、節奏穩，牠願意安靜陪你。", behavior: "更常慢眨，像安靜坐在你旁邊。", mark: "☘", className: "cat-evo-high-balanced" },
+  "low-active": { icon: "⌖", title: "狩獵野貓", detail: "活動足夠，但親密不足，牠更像室內的獨行者。", behavior: "在場景裡巡邏，常盯窗外和玩具。", mark: "⌖", className: "cat-evo-low-active" },
+  "mid-active": { icon: "!", title: "調皮運動貓", detail: "精力有出口，但仍需要更穩定的陪伴。", behavior: "會跳上跳下，容易推東西和夜間跑酷。", mark: "!", className: "cat-evo-mid-active" },
+  "high-active": { icon: "★", title: "英雄冒險貓", detail: "親密與活動都高，牠信你，也敢探索。", behavior: "主動探索，外出和新場景反應更勇敢。", mark: "★", className: "cat-evo-high-active" },
+};
+
 const itemNames = {
   dryFood: "乾糧",
   freezeDry: "凍乾",
@@ -339,9 +350,9 @@ const actionChoices = {
     { label: "不管夜跑，讓牠自己玩", detail: "貓不一定睡眠不足，但主人會被吵醒；長期會增加人貓衝突和錯誤管教風險。", money: 0, time: 0, energy: 0, stress: 10, sleepDebt: 18, mistake: "sleep", line: "牠玩得很開心，你明天上班會不會也開心就難說。" },
   ],
   vet: [
-    { label: "基本門診檢查", detail: "適合一般狀態；可降低一部分健康風險。", money: 680, time: 3, energy: 12, health: -12, line: "至少你沒有讓擔心只停留在猜測。" },
-    { label: "完整血檢尿檢", detail: "昂貴、耗時，但對中老年貓很重要。", money: 2200, time: 6, energy: 22, health: -26, add: { medicine: 1 }, line: "帳單很長，但資料也很有用。" },
-    { label: "絕育/牙科/專項處理", detail: "大額醫療，會明顯消耗金錢和精力。", money: 5200, time: 8, energy: 26, health: -20, stress: 6, flag: "neutered", line: "手術不是劇情，是請假、接送、觀察和帳單。" },
+    { label: "基本門診檢查", detail: "適合一般狀態；可降低一部分健康風險。", money: 1200, time: 3, energy: 12, health: -12, billItems: [{ label: "門診", amount: 680 }, { label: "基礎檢查", amount: 520 }], line: "至少你沒有讓擔心只停留在猜測。" },
+    { label: "完整血檢尿檢", detail: "昂貴、耗時，但對中老年貓很重要。", money: 3800, time: 6, energy: 22, health: -26, add: { medicine: 1 }, billItems: [{ label: "血檢", amount: 1600 }, { label: "尿檢", amount: 900 }, { label: "醫生解讀/藥物", amount: 1300 }], line: "帳單很長，但資料也很有用。" },
+    { label: "絕育/牙科/專項處理", detail: "大額醫療，會明顯消耗金錢和精力。", money: 6800, time: 8, energy: 26, health: -20, stress: 6, flag: "neutered", billItems: [{ label: "術前血檢", amount: 1200 }, { label: "手術/麻醉", amount: 4200 }, { label: "止痛藥與覆診", amount: 1400 }], line: "手術不是劇情，是請假、接送、觀察和帳單。" },
   ],
   lifestyle: [
     { label: "安裝窗網", detail: "一次性大額支出，能長期降低爬窗事故；之後約每60個月要更換。", money: 3800, time: 5, energy: 15, accident: -30, flag: "windowNet", install: "windowNet", line: "安全不是可愛配件，是底線。" },
@@ -390,7 +401,7 @@ const randomDrops = [
     text: "牠嘔了一次，仍然肯走動。你要決定是觀察、檢查，還是假裝沒事。",
     condition: (s) => s.healthRisk > 35 || s.completedActions.nutrition !== true,
     choices: [
-      { label: "即日看獸醫", money: 2800, time: 5, energy: 18, health: -20, stress: 4, line: "你花了半天和一張帳單，換來安心。" },
+      { label: "即日看獸醫", money: 2800, time: 5, energy: 18, health: -20, stress: 4, billItems: [{ label: "門診", amount: 680 }, { label: "止吐/藥物", amount: 720 }, { label: "血檢或影像", amount: 1400 }], line: "你花了半天和一張帳單，換來安心。" },
       { label: "記錄症狀並密切觀察", money: 0, time: 2, energy: 8, health: 6, line: "觀察可以，但不是忘記。" },
       { label: "覺得牠會自己好", money: 0, time: 0, energy: 0, health: 20, stress: 8, line: "省下來的時間，變成更高風險。" },
     ],
@@ -445,7 +456,7 @@ const randomDrops = [
     text: "牠喝水變多、活動變慢、體重下降。老不是診斷，老是提醒你要檢查。",
     condition: (s) => s.month >= 96 && (s.healthRisk > 38 || !s.completedActions.vet),
     choices: [
-      { label: "血檢尿檢並覆診", money: 8800, time: 7, energy: 22, health: -28, stress: 6, line: "你花了錢，也買到時間。" },
+      { label: "血檢尿檢並覆診", money: 8800, time: 7, energy: 22, health: -28, stress: 6, billItems: [{ label: "血檢尿檢", amount: 3200 }, { label: "影像/血壓", amount: 2600 }, { label: "藥物與覆診", amount: 3000 }], line: "你花了錢，也買到時間。" },
       { label: "只換老年糧", money: 1600, time: 2, energy: 6, health: 10, line: "飲食有幫助，但不能代替檢查。" },
       { label: "覺得只是老了", money: 0, time: 0, energy: 0, health: 28, stress: 12, line: "老不是理由，老是更需要被看見。" },
     ],
@@ -462,7 +473,7 @@ const diseaseEvents = [
     riskFactor: 0.0018,
     maxChance: 0.22,
     choices: [
-      { label: "門診、藥物和複查", money: 3200, time: 5, energy: 16, health: -26, stress: 4, medical: true, line: "季節病不是大劇情，但拖延會變成大帳單。" },
+      { label: "門診、藥物和複查", money: 4200, time: 5, energy: 16, health: -26, stress: 4, medical: true, billItems: [{ label: "門診", amount: 680 }, { label: "化驗/檢查", amount: 1200 }, { label: "藥物與複診", amount: 2320 }], line: "季節病不是大劇情，但拖延會變成大帳單。" },
     ],
   },
   {
@@ -474,7 +485,7 @@ const diseaseEvents = [
     riskFactor: 0.0025,
     maxChance: 0.32,
     choices: [
-      { label: "急診導尿、住院和複查", money: 16800, time: 10, energy: 34, health: -34, stress: 10, medical: true, chronic: { id: "urinaryDiet", name: "泌尿處方糧/定期尿檢", monthlyCost: 850, healthDrift: -2 }, line: "牠救回來了，但之後每一年都要承擔飲水、飲食和尿檢成本。" },
+      { label: "急診導尿、住院和複查", money: 23800, time: 10, energy: 34, health: -34, stress: 10, medical: true, billItems: [{ label: "急診", amount: 1800 }, { label: "導尿/麻醉", amount: 6200 }, { label: "住院輸液", amount: 9800 }, { label: "尿檢與覆診", amount: 2800 }, { label: "處方糧", amount: 3200 }], chronic: { id: "urinaryDiet", name: "泌尿處方糧/定期尿檢", monthlyCost: 950, healthDrift: -2 }, line: "牠救回來了，但之後每一年都要承擔飲水、飲食和尿檢成本。" },
     ],
   },
   {
@@ -486,7 +497,7 @@ const diseaseEvents = [
     riskFactor: 0.0022,
     maxChance: 0.28,
     choices: [
-      { label: "影像檢查、手術和住院", money: 23500, time: 12, energy: 38, health: -38, stress: 14, medical: true, line: "這不是『貓很頑皮』，是環境和陪伴共同累積出來的事故。" },
+      { label: "影像檢查、手術和住院", money: 38600, time: 12, energy: 38, health: -38, stress: 14, medical: true, billItems: [{ label: "急診與影像", amount: 6800 }, { label: "開腹手術", amount: 18500 }, { label: "住院與止痛", amount: 9200 }, { label: "覆診與藥物", amount: 4100 }], line: "這不是『貓很頑皮』，是環境和陪伴共同累積出來的事故。" },
     ],
   },
   {
@@ -498,7 +509,7 @@ const diseaseEvents = [
     riskFactor: 0.0016,
     maxChance: 0.24,
     choices: [
-      { label: "洗牙、拔牙和止痛治療", money: 9200, time: 7, energy: 24, health: -24, stress: 8, medical: true, chronic: { id: "dentalFollowup", name: "牙科覆診/口腔護理", monthlyCost: 420, healthDrift: -1 }, line: "牙齒不是小事。之後每一年都會多出口腔照顧成本。" },
+      { label: "洗牙、拔牙和止痛治療", money: 14600, time: 7, energy: 24, health: -24, stress: 8, medical: true, billItems: [{ label: "術前血檢", amount: 1800 }, { label: "麻醉洗牙", amount: 5200 }, { label: "拔牙/止痛", amount: 5200 }, { label: "覆診", amount: 2400 }], chronic: { id: "dentalFollowup", name: "牙科覆診/口腔護理", monthlyCost: 520, healthDrift: -1 }, line: "牙齒不是小事。之後每一年都會多出口腔照顧成本。" },
     ],
   },
   {
@@ -511,7 +522,7 @@ const diseaseEvents = [
     maxChance: 0.35,
     once: "kidneyCare",
     choices: [
-      { label: "血檢尿檢、住院穩定和長期治療", money: 18800, time: 11, energy: 36, health: -30, stress: 10, medical: true, chronic: { id: "kidneyCare", name: "慢性腎病長期治療", monthlyCost: 2200, healthDrift: -3 }, line: "不是治好一次就完。從今以後，長期治療會每一年出現在帳單裡。" },
+      { label: "血檢尿檢、住院穩定和長期治療", money: 32800, time: 11, energy: 36, health: -30, stress: 10, medical: true, billItems: [{ label: "血檢尿檢", amount: 3600 }, { label: "住院輸液", amount: 12800 }, { label: "超聲波/血壓", amount: 6200 }, { label: "藥物與處方糧", amount: 10200 }], chronic: { id: "kidneyCare", name: "慢性腎病長期治療", monthlyCost: 2400, healthDrift: -3 }, line: "不是治好一次就完。從今以後，長期治療會每一年出現在帳單裡。" },
     ],
   },
   {
@@ -523,7 +534,7 @@ const diseaseEvents = [
     riskFactor: 0.002,
     maxChance: 0.26,
     choices: [
-      { label: "急診、住院輸液和止痛", money: 14600, time: 9, energy: 32, health: -32, stress: 8, medical: true, line: "牠不是嬌氣。急性病會把你以為可以省下的錢一次拿走。" },
+      { label: "急診、住院輸液和止痛", money: 26800, time: 9, energy: 32, health: -32, stress: 8, medical: true, billItems: [{ label: "急診", amount: 1800 }, { label: "血檢/胰臟指標", amount: 3600 }, { label: "住院輸液", amount: 12800 }, { label: "止痛藥物", amount: 4200 }, { label: "覆診", amount: 4400 }], line: "牠不是嬌氣。急性病會把你以為可以省下的錢一次拿走。" },
     ],
   },
 ];
@@ -578,6 +589,15 @@ function newState() {
     medicalCount: 0,
     majorDecisions: 0,
     neglectTurns: 0,
+    expenses: {
+      year: 0,
+      byCategory: {},
+      medical: 0,
+      preventable: 0,
+      biggestBill: null,
+      lastBill: null,
+      history: [],
+    },
     playCount: 0,
     completedActions: {},
     actionPlans: {},
@@ -589,6 +609,8 @@ function newState() {
     currentEvent: null,
     currentReview: null,
     reviewExpanded: false,
+    evolutionSeen: startAgeMonths >= 36,
+    evolutionModal: null,
     currentAction: null,
     currentScene: "living",
     durables: {},
@@ -665,12 +687,50 @@ function level() {
   return Math.max(1, Math.floor(state.xp / 45) + 1);
 }
 
-function spend(amount, reason, medical = false) {
+function expenseCategory(reason = "", medical = false, fallback = "用品") {
+  if (medical) return "醫療";
+  if (/糧|食|餵|凍乾|肉條|鮮食|濕糧|乾糧/.test(reason)) return "飲食";
+  if (/砂|濾芯|用品|清潔|水碗|食碗/.test(reason)) return "清潔用品";
+  if (/玩|抓板|貓爬架|逗貓|小老鼠|益智|陪玩/.test(reason)) return "玩具陪伴";
+  if (/窗網|外出|旅行|照顧|安全|籠/.test(reason)) return "安全外出";
+  return fallback;
+}
+
+function recordExpense(amount, reason, options = {}) {
   if (!amount) return;
+  const medical = Boolean(options.medical);
+  const category = options.category || expenseCategory(reason, medical);
+  const billItems = (options.billItems || [{ label: reason, amount }]).filter((item) => item.amount);
+  const bill = {
+    reason,
+    amount,
+    category,
+    medical,
+    preventable: Boolean(options.preventable),
+    items: billItems,
+    month: state.month,
+  };
   state.fund -= amount;
   state.spent += amount;
-  if (medical) state.medicalCount += 1;
-  addLog(`${reason}：-${money.format(amount)}`);
+  state.expenses.year = (state.expenses.year || 0) + amount;
+  state.expenses.byCategory[category] = (state.expenses.byCategory[category] || 0) + amount;
+  if (medical) {
+    state.medicalCount += 1;
+    state.expenses.medical = (state.expenses.medical || 0) + amount;
+  }
+  if (bill.preventable) state.expenses.preventable = (state.expenses.preventable || 0) + amount;
+  state.expenses.lastBill = bill;
+  if (!state.expenses.biggestBill || amount > state.expenses.biggestBill.amount) state.expenses.biggestBill = bill;
+  state.expenses.history.unshift(bill);
+  state.expenses.history = state.expenses.history.slice(0, 12);
+  const line = billItems.length > 1
+    ? `${reason}帳單：${money.format(amount)}（${billItems.slice(0, 3).map((item) => `${item.label}${money.format(item.amount)}`).join(" / ")}）`
+    : `${reason}：-${money.format(amount)}`;
+  addLog(line);
+}
+
+function spend(amount, reason, medical = false, options = {}) {
+  recordExpense(amount, reason, { ...options, medical });
 }
 
 function useTimeEnergy(time, energy, reason) {
@@ -742,9 +802,19 @@ function ensureStateShape() {
   state.effortSpent ??= Math.max(0, 100 - (state.energy ?? 100));
   state.currentReview ||= null;
   state.reviewExpanded ||= false;
+  state.evolutionSeen ??= state.startAgeMonths >= 36 || state.month >= 36;
+  if (state.evolutionModal === undefined) state.evolutionModal = null;
   state.careMistakes ||= {};
   state.buriedRisks ||= {};
   state.annualReviews ||= [];
+  state.expenses ||= {};
+  state.expenses.year ??= 0;
+  state.expenses.byCategory ||= {};
+  state.expenses.medical ??= 0;
+  state.expenses.preventable ??= 0;
+  state.expenses.biggestBill ||= null;
+  state.expenses.lastBill ||= null;
+  state.expenses.history ||= [];
   state.activity ??= 34;
   state.sleepDebt ??= 18;
   state.poopLevel ??= 18;
@@ -837,7 +907,7 @@ function currentNeeds() {
   if (!state.lastVetAt || state.month - state.lastVetAt >= vetDueMonths || state.healthRisk > 45) required.push("vet");
   if (!state.flags.windowNet || state.accidentRisk > 42 || state.month % 18 === 0) required.push("lifestyle");
   return {
-    title: `${st.name}：今日第 ${state.turnInDay}/${YEARS_PER_DAY} 年，${personalityVisible() ? profile().name : "性格未明"}`,
+    title: `${st.name}：第 ${playYearIndex()}/${playableYears()} 年，${personalityVisible() ? profile().name : "性格未明"}`,
     descriptions,
     required,
   };
@@ -992,9 +1062,9 @@ function annualStatValue(choice, field, intensity, repeat) {
 }
 
 const effortRanges = [
-  { id: "basic", label: "基本維持", min: 0, max: 120, detail: "一年大致只做到餵食、鏟砂、睡眠和檢查用品，能維持生活但陪伴和預防仍偏少。" },
-  { id: "steady", label: "穩定照顧", min: 121, max: 320, detail: "一年包含日常餵食清潔，再加上陪玩、梳理、補貨或基本檢查，是比較接近真實負責任養貓的負擔。" },
-  { id: "heavy", label: "高負荷照顧", min: 321, max: Infinity, detail: "通常代表醫療、深層清潔、外出安排、密集陪伴或多個大項目疊加，會明顯擠壓主人的休息和情緒容量。" },
+  { id: "basic", label: "基本維持", min: 0, max: 180, detail: "一年大致只做到餵食、鏟砂和少量必要處理，能維持生存，但陪伴、預防和環境刺激仍偏少。" },
+  { id: "steady", label: "穩定照顧", min: 181, max: 520, detail: "一年包含日常餵食清潔、基本陪玩、用品補給或健康檢查，是比較接近真實負責任養貓的投入。" },
+  { id: "heavy", label: "高負荷照顧", min: 521, max: Infinity, detail: "通常代表大病醫療、深層清潔、旅行安排、密集行為修正或多個大項目疊加，會明顯擠壓主人的休息和情緒容量。" },
 ];
 
 const statInfo = {
@@ -1052,7 +1122,7 @@ const statInfo = {
   },
   "stat-energy": {
     title: "已付出精力",
-    text: "今年照顧消耗的精神和體力總量，可以超過100。0-120是基本維持，121-320是穩定照顧，321以上是高負荷照顧。它用來判斷主人投入程度，而不是限制你不能再做。",
+    text: "今年照顧消耗的精神和體力總量，可以超過100。0-180是基本維持，181-520是穩定照顧，521以上是高負荷照顧。它用來判斷主人投入程度，而不是限制你不能再做。",
   },
 };
 
@@ -1075,6 +1145,7 @@ function buildActionPlan(action, selected, intensity) {
     installDurables: [],
     setFlags: [],
     autoPurchases: [],
+    billItems: [],
     habitGains: {},
     playCount: 0,
     snackMeals: 0,
@@ -1093,6 +1164,7 @@ function buildActionPlan(action, selected, intensity) {
       effects.time += item.time || 0;
       effects.energy += item.energy || 0;
       effects.autoPurchases.push(item.label);
+      effects.billItems.push({ label: item.label, amount: item.price || 0 });
       Object.entries(item.add || {}).forEach(([itemKey, itemAmount]) => {
         touchInventory(itemKey);
         tempInventory[itemKey] = (tempInventory[itemKey] || 0) + itemAmount;
@@ -1107,7 +1179,13 @@ function buildActionPlan(action, selected, intensity) {
     if (!choice) continue;
     const repeat = annualRepeatForChoice(action, choice);
     if (repeat > 1) effects.annualized = true;
-    effects.money += (choice.money || 0) * repeat;
+    const choiceMoney = (choice.money || 0) * repeat;
+    effects.money += choiceMoney;
+    if (choice.billItems?.length) {
+      choice.billItems.forEach((item) => effects.billItems.push({ label: item.label, amount: item.amount * repeat }));
+    } else if (choiceMoney) {
+      effects.billItems.push({ label: choice.label.replace(/，.*$/, ""), amount: choiceMoney });
+    }
     effects.time += (choice.time || 0) * repeat;
     effects.energy += (choice.energy || 0) * repeat;
 
@@ -1149,6 +1227,7 @@ function buildActionPlan(action, selected, intensity) {
       effects.energy += item.energy || 0;
       effects.installDurables.push(key);
       effects.autoPurchases.push(item.label);
+      effects.billItems.push({ label: item.label, amount: item.price || 0 });
       if (effects.durablesBefore[key] === undefined) effects.durablesBefore[key] = state.durables[key] ? { ...state.durables[key] } : null;
       Object.entries(item.add || {}).forEach(([itemKey, amount]) => {
         touchInventory(itemKey);
@@ -1204,10 +1283,13 @@ function buildActionPlan(action, selected, intensity) {
 }
 
 function applyActionPlanEffects(action, selected, intensity, effects) {
-  state.fund -= effects.money;
-  state.spent += effects.money;
-  if (action === "vet" && effects.money) state.medicalCount += 1;
-  if (effects.money) addLog(`${actionMeta[action].title}方案：-${money.format(effects.money)}`);
+  if (effects.money) {
+    recordExpense(effects.money, `${actionMeta[action].title}方案`, {
+      medical: action === "vet",
+      category: expenseCategory(actionMeta[action].title, action === "vet"),
+      billItems: effects.billItems,
+    });
+  }
   state.timeLeft = clamp(state.timeLeft - effects.time, 0, YEAR_TIME_BUDGET);
   state.energy = clamp(state.energy - effects.energy, 0, 100);
   state.timeSpent = (state.timeSpent || 0) + effects.time;
@@ -1264,6 +1346,10 @@ function revertActionPlan(action) {
   const effects = plan.effects;
   state.fund += effects.money;
   state.spent = Math.max(0, state.spent - effects.money);
+  const category = expenseCategory(actionMeta[action]?.title || action, action === "vet");
+  state.expenses.year = Math.max(0, (state.expenses.year || 0) - effects.money);
+  state.expenses.byCategory[category] = Math.max(0, (state.expenses.byCategory[category] || 0) - effects.money);
+  if (action === "vet") state.expenses.medical = Math.max(0, (state.expenses.medical || 0) - effects.money);
   state.timeLeft = clamp(state.timeLeft + effects.time, 0, YEAR_TIME_BUDGET);
   state.energy = clamp(state.energy + effects.energy, 0, 100);
   state.timeSpent = Math.max(0, (state.timeSpent || 0) - effects.time);
@@ -1346,7 +1432,7 @@ function confirmActionPlan() {
 function buyShopItem(id) {
   const item = shopCatalog.find((entry) => entry.id === id);
   if (!item) return;
-  spend(item.price, `商店購買：${item.label}`, Boolean(item.medical));
+  spend(item.price, `商店購買：${item.label}`, Boolean(item.medical), { category: item.category === "醫療" ? "醫療" : item.category });
   useTimeEnergy(item.time || 0, item.energy || 0, `商店購買：${item.label}`);
   addItems(item.add);
   if (item.flag) state.flags[item.flag] = true;
@@ -1587,7 +1673,7 @@ function resolveActionChoice(index) {
   }
 
   state.completedActions[action] = true;
-  spend(choice.money || 0, choice.label, action === "vet");
+  spend(choice.money || 0, choice.label, action === "vet", { category: expenseCategory(choice.label, action === "vet"), billItems: choice.billItems });
   useTimeEnergy(choice.time || 0, choice.energy || 0, choice.label);
   addItems(choice.add);
   useItems(choice.use);
@@ -1648,7 +1734,13 @@ function addChronicCondition(chronic) {
 
 function applyChronicCosts() {
   activeChronicConditions().forEach((condition) => {
-    if (condition.monthlyCost) spend(condition.monthlyCost * 12, `年度長期治療：${condition.name}`, true);
+    if (condition.monthlyCost) spend(condition.monthlyCost * 12, `年度長期治療：${condition.name}`, true, {
+      category: "醫療",
+      billItems: [
+        { label: "處方/藥物", amount: Math.round(condition.monthlyCost * 8) },
+        { label: "覆診/檢查", amount: Math.round(condition.monthlyCost * 4) },
+      ],
+    });
     if (condition.healthDrift) state.healthRisk = clamp(state.healthRisk + condition.healthDrift * 2);
     addLog(`${condition.name}：今年需要持續管理。`);
   });
@@ -1710,21 +1802,10 @@ function evolutionResult() {
   const bondingBand = state.bonding < 45 ? "low" : state.bonding < 70 ? "mid" : "high";
   const activityBand = state.activity < 38 ? "lazy" : state.activity < 66 ? "balanced" : "active";
   const key = `${bondingBand}-${activityBand}`;
-  const table = {
-    "low-lazy": ["冷漠街貓", "親密低、活動低，牠學會少期待人。"],
-    "mid-lazy": ["沙發肥貓", "有基本安全感，但活動量和體重管理不足。"],
-    "high-lazy": ["黏人抱抱貓", "很信任你，但生活刺激偏少，容易依賴和發胖。"],
-    "low-balanced": ["高冷名模貓", "照顧尚可，但關係距離感明顯。"],
-    "mid-balanced": ["日常家貓", "關係和活動都穩定，是最接近日常的分支。"],
-    "high-balanced": ["溫柔守護貓", "親密高、節奏穩，牠願意安靜陪你。"],
-    "low-active": ["狩獵野貓", "活動足夠，但親密不足，牠更像室內的獨行者。"],
-    "mid-active": ["調皮運動貓", "精力有出口，但仍需要更穩定的陪伴。"],
-    "high-active": ["英雄冒險貓", "親密與活動都高，牠信你，也敢探索。"],
-  };
-  const [title, detail] = table[key] || table["mid-balanced"];
+  const meta = evolutionVisualMeta[key] || evolutionVisualMeta["mid-balanced"];
   const mistakeLoad = Object.values(state.careMistakes || {}).reduce((sum, item) => sum + item.severity, 0);
   const modifier = mistakeLoad > 18 ? "照顧錯誤偏多，最終分支會帶有更高病痛和疏離陰影。" : "照顧錯誤可控，牠的成長主要由陪伴和活動決定。";
-  return { title, detail, modifier, bondingBand, activityBand };
+  return { ...meta, key, modifier, bondingBand, activityBand };
 }
 
 function annualIssueSnapshot() {
@@ -1759,6 +1840,8 @@ function generateAnnualReview() {
   });
 
   const year = Math.max(1, Math.ceil((state.month - 1) / 12));
+  const yearBills = state.expenses.history.filter((bill) => bill.month <= state.month && bill.month > (previous?.month || state.startAgeMonths || 0));
+  const biggestYearBill = yearBills.sort((a, b) => b.amount - a.amount)[0] || null;
   const review = {
     id: `year-${year}`,
     year,
@@ -1766,6 +1849,14 @@ function generateAnnualReview() {
     age: `${year}歲`,
     issues,
     buriedTotal: Object.values(state.buriedRisks || {}).reduce((sum, value) => sum + value, 0),
+    financial: {
+      yearSpend: state.expenses.year || 0,
+      byCategory: { ...(state.expenses.byCategory || {}) },
+      medicalSpend: state.expenses.byCategory?.["醫療"] || 0,
+      biggestBill: biggestYearBill,
+      lastBill: state.expenses.lastBill,
+      fundLeft: state.fund,
+    },
     stats: {
       healthRisk: Math.round(state.healthRisk),
       stress: Math.round(state.stress),
@@ -1782,6 +1873,8 @@ function generateAnnualReview() {
   state.annualReviews.push(review);
   state.currentReview = review;
   state.reviewExpanded = false;
+  state.expenses.year = 0;
+  state.expenses.byCategory = {};
   addLog(`第${year}年回顧已生成：${issues.length ? "有風險被記錄" : "照顧穩定"}`);
 }
 
@@ -2001,6 +2094,7 @@ function advanceMonth() {
 }
 
 function closeMonth() {
+  const oldMonth = state.month;
   state.month += MONTHS_PER_TURN;
   state.turnInDay += 1;
   if (state.turnInDay > YEARS_PER_DAY) {
@@ -2036,6 +2130,13 @@ function closeMonth() {
   }
 
   if (!state.currentEvent) $("#cat-line").textContent = pick("idle");
+  if (!state.evolutionSeen && oldMonth < 36 && state.month >= 36) {
+    const evolution = evolutionResult();
+    state.evolutionSeen = true;
+    state.evolutionModal = evolution;
+    $("#cat-line").textContent = `${state.catName} 長大了，成為「${evolution.title}」。`;
+    addLog(`成年進化：${evolution.title}`);
+  }
   saveGame();
   render();
 }
@@ -2046,7 +2147,11 @@ function resolveChoice(index) {
   const choice = event.choices[index];
   if (!choice) return;
 
-  spend(choice.money || 0, event.title, Boolean(choice.medical) || event.id === "vomit" || event.id === "senior");
+  spend(choice.money || 0, event.title, Boolean(choice.medical) || event.id === "vomit" || event.id === "senior", {
+    category: (Boolean(choice.medical) || event.id === "vomit" || event.id === "senior") ? "醫療" : expenseCategory(event.title),
+    billItems: choice.billItems,
+    preventable: Boolean(choice.medical) && (state.neglectTurns > 0 || state.healthRisk > 55 || state.cleanliness < 55 || state.hydration < 58 || state.stress > 58),
+  });
   useTimeEnergy(choice.time || 0, choice.energy || 0, event.title);
   addItems(choice.add);
   useItems(choice.use);
@@ -2110,7 +2215,7 @@ function completeToday() {
   const required = currentNeeds().required;
   const done = required.filter((key) => state.completedActions[key]).length;
   const total = required.length;
-  showBanner(`今日第 ${state.turnInDay}/${YEARS_PER_DAY} 年，已完成 ${done}/${total} 項核心照顧。特殊情況和大病由系統強制提醒，年度回顧會記錄沒改善的問題。`);
+  showBanner(`本次進度第 ${playYearIndex()}/${playableYears()} 年，已完成 ${done}/${total} 項核心照顧。特殊情況和大病由系統強制提醒，年度回顧會記錄沒改善的問題。`);
 }
 
 function checkAbandonment() {
@@ -2271,8 +2376,16 @@ function renderChoicePanel() {
       const buried = state.buriedRisks[issue.key] ? `；埋雷 +${state.buriedRisks[issue.key]}` : "";
       return `<li><strong>${issue.title}</strong><span>本年 ${issue.count} 次，嚴重度 ${issue.severity}${issue.repeated ? "，去年已提醒仍未改善" : ""}${buried}</span><small>${issue.latest}</small></li>`;
     });
+    const categories = Object.entries(review.financial?.byCategory || {})
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 4)
+      .map(([name, value]) => `${name}${money.format(value)}`)
+      .join(" · ");
+    const biggestBill = review.financial?.biggestBill;
     summary.innerHTML = `
       <strong>${review.age}狀態回顧</strong>
+      <span>今年帳單 ${money.format(review.financial?.yearSpend || 0)}${categories ? `：${categories}` : ""}</span>
+      <span>最大單次帳單 ${biggestBill ? `${money.format(biggestBill.amount)}（${biggestBill.reason}）` : "無"} · 剩餘基金 ${money.format(review.financial?.fundLeft || state.fund)}</span>
       <span>健康風險 ${review.stats.healthRisk} · 壓力 ${review.stats.stress} · 親密 ${review.stats.bonding} · 活動 ${review.stats.activity}</span>
       <span>清潔 ${review.stats.cleanliness} · 睡眠債 ${review.stats.sleepDebt} · 砂盆髒污 ${review.stats.poopLevel} · 零食比例 ${review.stats.snackRatio}%</span>
       <small>成長傾向：${review.evolution.title}。${review.evolution.detail}</small>
@@ -2367,7 +2480,10 @@ function renderChoicePanel() {
       const autoText = effects.autoPurchases?.length ? ` 已自動把缺少的${Array.from(new Set(effects.autoPurchases)).join("、")}加入成本。` : "";
       const habitText = effects.habitNote ? ` ${effects.habitNote}` : "";
       const yearText = effects.annualized ? " 已按一年重複照顧換算。" : "";
-      summary.innerHTML = `<strong>${money.format(effects.money)} · ${effects.time}h · 精力${effects.energy}</strong><span>今年累積：${afterTime}h / 精力${afterEnergy} · ${afterLevel.label}</span><small>${yearText}${autoText}${habitText}${effects.sceneNote ? ` ${effects.sceneNote}` : ""}${effects.time > state.timeLeft ? " 今年時間不足，請調整。" : ""}</small>`;
+      const billText = effects.billItems?.length
+        ? `<small>帳單：${effects.billItems.slice(0, 4).map((item) => `${item.label}${money.format(item.amount)}`).join(" / ")}</small>`
+        : "";
+      summary.innerHTML = `<strong>${money.format(effects.money)} · ${effects.time}h · 精力${effects.energy}</strong><span>今年累積：${afterTime}h / 精力${afterEnergy} · ${afterLevel.label}</span>${billText}<small>${yearText}${autoText}${habitText}${effects.sceneNote ? ` ${effects.sceneNote}` : ""}${effects.time > state.timeLeft ? " 今年時間不足，請調整。" : ""}</small>`;
       if (effects.time > state.timeLeft) summary.classList.add("warning");
     }
     $("#choice-actions").appendChild(summary);
@@ -2545,6 +2661,73 @@ function renderYearBrief() {
   `;
 }
 
+function renderVisualStatus() {
+  const chips = [
+    { icon: state.hunger < 45 ? "🍚" : "🥣", label: state.hunger < 45 ? "餓" : "飽", state: state.hunger < 45 ? "problem" : "good" },
+    { icon: state.cleanliness < 50 || state.poopLevel > 65 ? "💩" : "✨", label: state.cleanliness < 50 || state.poopLevel > 65 ? "髒" : "乾淨", state: state.cleanliness < 50 || state.poopLevel > 65 ? "problem" : "good" },
+    { icon: state.boredom > 60 ? "🧶" : "🎾", label: state.boredom > 60 ? "悶" : "有玩", state: state.boredom > 60 ? "problem" : "good" },
+    { icon: state.healthRisk > 55 ? "🤒" : "🩺", label: state.healthRisk > 55 ? "病風險" : "健康", state: state.healthRisk > 55 ? "problem" : "good" },
+    { icon: state.sleepDebt > 55 ? "🌙" : "🛏", label: state.sleepDebt > 55 ? "夜跑" : "安睡", state: state.sleepDebt > 55 ? "problem" : "good" },
+    { icon: state.bonding > 70 ? "💚" : "🐾", label: state.bonding > 70 ? "親近" : "觀察", state: state.bonding > 70 ? "good" : "" },
+  ];
+  $("#visual-status").innerHTML = chips
+    .map((chip) => `<div class="status-chip ${chip.state}"><strong>${chip.icon}</strong><span>${chip.label}</span></div>`)
+    .join("");
+}
+
+function renderEvolutionGrid() {
+  const current = evolutionResult();
+  const rows = [
+    ["high-lazy", "high-balanced", "high-active"],
+    ["mid-lazy", "mid-balanced", "mid-active"],
+    ["low-lazy", "low-balanced", "low-active"],
+  ];
+  $("#evolution-grid").innerHTML = rows
+    .flat()
+    .map((key) => {
+      const meta = evolutionVisualMeta[key];
+      return `<div class="evolution-cell ${key === current.key ? "current" : ""}">
+        <span>${meta.icon}</span>
+        <strong>${meta.title}</strong>
+        <small>${meta.behavior}</small>
+      </div>`;
+    })
+    .join("") + `
+      <div class="axis-label axis-y">Y 親密度 ${Math.round(state.bonding)}</div>
+      <div class="axis-label axis-x">X 活動量 ${Math.round(state.activity)}</div>
+      <div class="axis-scale y-high">100</div>
+      <div class="axis-scale y-mid">50</div>
+      <div class="axis-scale y-low">0</div>
+      <div class="axis-scale x-low">0</div>
+      <div class="axis-scale x-mid">50</div>
+      <div class="axis-scale x-high">100</div>
+      <div class="evolution-point" style="--x:${clamp(state.activity)}%; --y:${clamp(state.bonding)}%" title="活動量 ${Math.round(state.activity)}，親密度 ${Math.round(state.bonding)}">
+        <span>X${Math.round(state.activity)} / Y${Math.round(state.bonding)}</span>
+      </div>
+    `;
+}
+
+function renderEvolutionModal() {
+  const modal = $("#evolution-modal");
+  if (!modal) return;
+  const evolution = state.evolutionModal;
+  modal.classList.toggle("hidden", !evolution);
+  modal.setAttribute("aria-hidden", evolution ? "false" : "true");
+  if (!evolution) return;
+  $("#evolution-name").textContent = evolution.title;
+  $("#evolution-text").textContent = `${state.catName} 成為「${evolution.title}」。${evolution.detail} ${evolution.behavior}`;
+  setCatImage("#evolution-cat-image", state.coat || "orange");
+  const cat = $("#evolution-modal .cat");
+  cat.className = `cat cat-coat-${state.coat || "orange"} idle ${evolution.className}`;
+  $("#evolution-persona-mark").textContent = evolution.mark;
+}
+
+function closeEvolutionModal() {
+  state.evolutionModal = null;
+  saveGame();
+  render();
+}
+
 function renderOwnerEffort() {
   const wrap = $("#owner-effort-options");
   wrap.innerHTML = "";
@@ -2589,7 +2772,11 @@ function updateCatVisual() {
   cat.style.setProperty("--growth", growth.toFixed(2));
   setCatImage("#cat-image", state.coat || "orange");
   cat.classList.remove("cat-coat-orange", "cat-coat-blue", "cat-coat-tuxedo", "cat-coat-silver", "cat-coat-cream", "cat-coat-siamese");
+  Object.values(evolutionVisualMeta).forEach((meta) => cat.classList.remove(meta.className));
   cat.classList.add(`cat-coat-${state.coat || "orange"}`);
+  const evolution = evolutionResult();
+  const adultShape = ["adult", "mature", "senior"].includes(st);
+  if (adultShape) cat.classList.add(evolution.className);
   cat.classList.toggle("sick", state.healthRisk > 68 || state.hydration < 25);
   cat.classList.toggle("stressed", state.stress > 70 || state.boredom > 75);
   cat.classList.toggle("cat-pain", painfulEvent || state.healthRisk > 82);
@@ -2600,6 +2787,7 @@ function updateCatVisual() {
   cat.classList.toggle("cat-teen", st === "teen");
   cat.classList.toggle("cat-alert", Boolean(state.currentEvent));
   $("#cat-mark").textContent = painfulEvent ? "痛" : dangerEvent ? "!" : state.currentEvent ? "!" : state.healthRisk > 75 ? "!" : state.stress > 70 ? "…" : "";
+  $("#cat-persona-mark").textContent = adultShape ? evolution.mark : "";
   $("#room-window").classList.toggle("safe", state.flags.windowNet);
   $("#room-sofa").classList.toggle("scratched", !state.flags.scratchPost && state.boredom > 55);
   $("#room-cat-tree").classList.toggle("hidden", !hasValidDurable("catTree"));
@@ -2624,9 +2812,14 @@ function render() {
   const ageYears = Math.floor((state.month - 1) / 12);
   const ageMonth = (state.month - 1) % 12;
   const currentYear = playYearIndex();
-  $("#day-title").textContent = `第 ${currentYear}/${playableYears()} 年 · 第 ${state.dayBlock}/${playDayTotal()} 天 · 今日 ${state.turnInDay}/${YEARS_PER_DAY} 年 · ${ageYears}歲${ageMonth}個月`;
+  $("#day-title").textContent = `第 ${currentYear}/${playableYears()} 年 · ${ageYears}歲${ageMonth}個月`;
   $("#fund-left").textContent = money.format(Math.max(0, state.fund));
   $("#spent-total").textContent = `累積支出 ${money.format(state.spent)}`;
+  $("#year-spent-total").textContent = `今年支出 ${money.format(state.expenses?.year || 0)}`;
+  const lastBill = state.expenses?.lastBill;
+  $("#last-bill").textContent = lastBill
+    ? `最近帳單：${lastBill.reason} ${money.format(lastBill.amount)}。${lastBill.medical ? "醫療會突然吃掉現金。" : "這是日常責任的一部分。"}`
+    : "還沒有帳單";
   $("#fund-meter").style.width = `${clamp((state.fund / state.initialFund) * 100)}%`;
   $("#stat-hunger").textContent = Math.round(state.hunger);
   $("#stat-happiness").textContent = Math.round(state.happiness);
@@ -2658,14 +2851,17 @@ function render() {
   renderShop();
   renderNeeds();
   renderYearBrief();
+  renderVisualStatus();
   renderInventory();
   renderDurability();
   renderAchievements();
+  renderEvolutionGrid();
   renderStatInfoButtons();
   renderOwnerEffort();
   renderHistory();
   renderChoicePanel();
   updateCatVisual();
+  renderEvolutionModal();
 }
 
 function finishGame() {
@@ -2684,6 +2880,9 @@ function finishGame() {
   $("#summary-play").textContent = state.playCount;
   $("#summary-neglect").textContent = state.neglectTurns;
   $("#summary-medical").textContent = state.medicalCount;
+  $("#summary-medical-spent").textContent = money.format(state.expenses?.medical || 0);
+  $("#summary-biggest-bill").textContent = money.format(state.expenses?.biggestBill?.amount || 0);
+  $("#summary-preventable").textContent = money.format(state.expenses?.preventable || 0);
   $("#summary-decisions").textContent = state.majorDecisions;
   $("#summary-evolution").textContent = evolution.title;
   $("#summary-buried").textContent = buriedTotal;
@@ -2705,7 +2904,7 @@ function saveGame() {
 function startGame() {
   state = newState();
   const remaining = lifeEndMonth() - state.startAgeMonths;
-  state.logs = [`年度壓縮貓生開始：從${state.startAgeMonths}個月開始，剩約${Math.ceil(remaining / 12)}年；每天最多經歷${YEARS_PER_DAY}年，每次點擊就是一年。`];
+  state.logs = [`年度壓縮貓生開始：從${state.startAgeMonths}個月開始，剩約${Math.ceil(remaining / 12)}年；一次可以走完整個流程，每次點擊就是一年。`];
   if (!state.personalityKnown) addLog("幼貓性格未知，會在照顧中慢慢顯現。");
   $("#cat-line").textContent = pick("idle");
   setScreen("#game-screen");
@@ -2776,6 +2975,15 @@ $$("[data-room-action]").forEach((target) => {
     event.preventDefault();
     openAction();
   });
+});
+
+$$(".pet-menu [data-action]").forEach((button) => {
+  button.addEventListener("click", () => applyAction(button.dataset.action));
+});
+
+$("#evolution-close")?.addEventListener("click", closeEvolutionModal);
+$("#evolution-modal")?.addEventListener("click", (event) => {
+  if (event.target?.id === "evolution-modal") closeEvolutionModal();
 });
 
 $("#start-button").addEventListener("click", startGame);

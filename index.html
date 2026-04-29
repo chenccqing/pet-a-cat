@@ -28,6 +28,7 @@
           <div>
             <h2>開始前，設定領養條件</h2>
             <p id="personality-help">幼貓性格未知；領養1歲或3歲以上的貓，可以先知道牠的性格。</p>
+            <p class="setup-note">貓咪最終性格不是固定答案，會隨你的餵食、陪伴、清潔、醫療、訓練和忽略方式慢慢改變。</p>
           </div>
 
           <div class="setup-row">
@@ -99,11 +100,11 @@
       <section id="game-screen" class="screen">
         <header class="topbar">
           <div>
-            <p class="eyebrow">每天3分鐘 · 每次一年</p>
+            <p class="eyebrow">每次一年</p>
             <h2 id="day-title">第 1 日</h2>
           </div>
           <div class="topbar-actions">
-            <button id="fast-forward-button" class="ghost-button" type="button">今日進度</button>
+            <button id="fast-forward-button" class="ghost-button" type="button">本次進度</button>
             <button id="summary-button" class="ghost-button" type="button">看結算</button>
             <button id="reset-button" class="ghost-button" type="button">重新開始</button>
           </div>
@@ -142,8 +143,20 @@
               <div id="cat" class="cat cat-orange cat-coat-orange idle" aria-label="電子貓">
                 <img id="cat-image" class="cat-image" alt="電子貓" />
                 <span id="cat-mark" class="cat-mark"></span>
+                <span id="cat-persona-mark" class="cat-persona-mark"></span>
               </div>
               <div class="floor-shadow"></div>
+            </div>
+
+            <div id="visual-status" class="visual-status" aria-label="貓咪狀態"></div>
+
+            <div class="pet-menu" aria-label="短菜單">
+              <button type="button" data-action="nutrition"><span>🍽</span><strong>餵食</strong></button>
+              <button type="button" data-action="hygiene"><span>🪣</span><strong>清潔</strong></button>
+              <button type="button" data-action="enrichment"><span>🎾</span><strong>玩</strong></button>
+              <button type="button" data-action="vet"><span>🩺</span><strong>醫療</strong></button>
+              <button type="button" data-action="training"><span>🧠</span><strong>訓練</strong></button>
+              <button type="button" data-action="lifestyle"><span>🧳</span><strong>外出</strong></button>
             </div>
 
             <div id="year-brief" class="year-brief"></div>
@@ -186,6 +199,8 @@
                 <span id="fund-meter"></span>
               </div>
               <small id="spent-total">累積支出 $0</small>
+              <small id="year-spent-total">今年支出 $0</small>
+              <small id="last-bill">還沒有帳單</small>
             </div>
 
             <div class="stats-grid">
@@ -266,6 +281,11 @@
               <p id="stage-label">幼貓期：好可愛，也好燒錢。</p>
             </div>
 
+            <details class="evolution-card" open>
+              <summary>3×3 Adult 進化表</summary>
+              <div id="evolution-grid" class="evolution-grid"></div>
+            </details>
+
             <details class="inventory-card" open>
               <summary>背包</summary>
               <ul id="inventory-list"></ul>
@@ -287,7 +307,7 @@
             </details>
 
             <details class="log-card">
-              <summary>今日紀錄</summary>
+              <summary>本次紀錄</summary>
               <ul id="log-list"></ul>
             </details>
           </aside>
@@ -322,6 +342,18 @@
               <strong id="summary-medical">0</strong>
             </div>
             <div>
+              <span>醫療總支出</span>
+              <strong id="summary-medical-spent">$0</strong>
+            </div>
+            <div>
+              <span>最大單次帳單</span>
+              <strong id="summary-biggest-bill">$0</strong>
+            </div>
+            <div>
+              <span>拖延代價</span>
+              <strong id="summary-preventable">$0</strong>
+            </div>
+            <div>
               <span>重大選擇</span>
               <strong id="summary-decisions">0</strong>
             </div>
@@ -344,6 +376,15 @@
             <ul id="summary-review-list" class="summary-review-list"></ul>
           </div>
 
+          <div class="medeci-card">
+            <div>
+              <p class="eyebrow">現實照顧下一步</p>
+              <h3>MedeciPets</h3>
+              <p>如果這不是電子貓，而是真實貓咪，主人需要記錄飲食、疫苗、絕育、覆診、慢性病、老年照護和最後的陪伴。MedeciPets 是協助主人管理貓咪生老病死全週期的照顧網站。</p>
+            </div>
+            <a class="primary-button medeci-link" href="https://medecipets.com" target="_blank" rel="noopener noreferrer">前往 MedeciPets</a>
+          </div>
+
           <div class="reflection">
             <h3>如果這不是電子貓，而是真實生命，你還會開始嗎？</h3>
             <div class="reflection-actions">
@@ -354,6 +395,22 @@
           </div>
 
           <button id="play-again-button" class="ghost-button" type="button">再體驗一次</button>
+        </div>
+      </section>
+
+      <section id="evolution-modal" class="evolution-modal hidden" aria-hidden="true">
+        <div class="evolution-dialog" role="dialog" aria-modal="true" aria-labelledby="evolution-title">
+          <p class="eyebrow">成年進化</p>
+          <h2 id="evolution-title">牠長大了</h2>
+          <div class="evolution-stage">
+            <div class="cat cat-orange cat-coat-orange idle" aria-hidden="true">
+              <img id="evolution-cat-image" class="cat-image" alt="" />
+              <span id="evolution-persona-mark" class="cat-persona-mark"></span>
+            </div>
+          </div>
+          <h3 id="evolution-name">日常家貓</h3>
+          <p id="evolution-text">你的照顧方式，讓牠長成這樣。</p>
+          <button id="evolution-close" class="primary-button" type="button">繼續照顧牠</button>
         </div>
       </section>
     </main>
