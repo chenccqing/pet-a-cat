@@ -220,6 +220,24 @@ label {
   font-weight: 700;
 }
 
+.language-switch {
+  align-items: center;
+  display: inline-grid;
+  grid-template-columns: auto 120px;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.language-select {
+  min-height: 44px;
+  width: 118px;
+}
+
+.summary-language {
+  float: right;
+  margin-bottom: 12px;
+}
+
 input,
 select {
   width: 100%;
@@ -821,12 +839,18 @@ select {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.86);
   color: var(--green-dark);
+  cursor: pointer;
   display: grid;
   font-size: 18px;
   font-weight: 900;
   min-height: 32px;
+  padding: 0;
   place-items: center;
   box-shadow: 0 8px 16px rgba(36, 55, 70, 0.12);
+}
+
+.cat-persona-mark:empty {
+  display: none;
 }
 
 .cat-old {
@@ -865,10 +889,25 @@ select {
   position: absolute;
   top: -20px;
   left: 50%;
+  border: 0;
+  background: transparent;
   color: var(--rose);
+  cursor: pointer;
   font-size: 30px;
   font-weight: 900;
+  line-height: 1;
+  padding: 0;
   transform: translateX(-50%);
+}
+
+.cat-mark:empty {
+  display: none;
+}
+
+.cat-mark:focus-visible,
+.cat-persona-mark:focus-visible {
+  outline: 3px solid rgba(47, 109, 153, 0.3);
+  outline-offset: 3px;
 }
 
 .cat-coat-orange,

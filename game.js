@@ -2,6 +2,7 @@ const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
 const SAVE_KEY = "before-cat-life-v4";
+const LANG_KEY = "before-cat-life-lang";
 const TOTAL_MONTHS = 180;
 const MONTHS_PER_TURN = 12;
 const YEARS_PER_DAY = TOTAL_MONTHS / 12;
@@ -9,7 +10,7 @@ const YEAR_TIME_BUDGET = 240;
 const ABANDON_HOURS = 36;
 
 function defaultLifeEndMonth(startAgeMonths = 0) {
-  return startAgeMonths >= 48 ? startAgeMonths + 120 : TOTAL_MONTHS;
+  return startAgeMonths >= 36 ? startAgeMonths + 120 : TOTAL_MONTHS;
 }
 
 function lifeEndMonth() {
@@ -39,6 +40,265 @@ const money = new Intl.NumberFormat("en-HK", {
 });
 
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, value));
+let currentLang = localStorage.getItem(LANG_KEY) || "zh";
+
+const uiCopy = {
+  zh: {
+    docTitle: "養之前：15年養貓責任模擬",
+    langLabel: "語言",
+    heroEyebrow: "香港首個 15 年養貓責任模擬",
+    heroTitle: "養之前",
+    heroLead: "一隻電子貓，陪你先走完一次「責任」。",
+    setupTitle: "開始前，設定領養條件",
+    setupNote: "貓咪最終性格不是固定答案，會隨你的餵食、陪伴、清潔、醫療、訓練和忽略方式慢慢改變。",
+    startAge: "領養起點",
+    sex: "貓性別",
+    coat: "貓咪外觀",
+    catName: "貓名",
+    fund: "起始養貓基金",
+    startButton: "開始年度責任體驗",
+    perTurn: "每次一年",
+    progressButton: "本次進度",
+    summaryButton: "看結算",
+    resetButton: "重新開始",
+    nextYear: "進入下一年",
+    fundLeft: "剩餘基金",
+    spentTotal: "累積支出",
+    yearSpent: "今年支出",
+    noBill: "還沒有帳單",
+    annualNeeds: "今年要做",
+    sudden: "突發情況",
+    shop: "商店",
+    shopShelf: "道具貨架",
+    inventory: "背包",
+    durability: "用品壽命",
+    achievements: "親密成就",
+    history: "生命履歷",
+    log: "本次紀錄",
+    effortTitle: "投入程度判斷",
+    lifeProgress: "貓生進度",
+    evolutionTable: "3×3 Adult 進化表",
+    summaryEyebrow: "貓生模擬完成",
+    summaryDone: "走完一生。",
+    summaryLabels: ["總支出", "推算一生", "陪伴次數", "忽略天數", "醫療事件", "醫療總支出", "最大單次帳單", "拖延代價", "重大選擇", "最終成長", "埋雷總數", "年度回顧"],
+    reviewRecord: "年度回顧留下的紀錄",
+    finalQuestion: "如果這不是電子貓，而是真實生命，你還會開始嗎？",
+    readyButton: "我準備好",
+    notReadyButton: "我未準備好",
+    playAgain: "再體驗一次",
+    medeciEyebrow: "現實照顧下一步",
+    medeciText: "如果這不是電子貓，而是真實貓咪，主人需要記錄飲食、疫苗、絕育、覆診、慢性病、老年照護和最後的陪伴。MedeciPets 是協助主人管理貓咪生老病死全週期的照顧網站。",
+    medeciLink: "前往 MedeciPets",
+  },
+  en: {
+    docTitle: "Before You Adopt: 15-Year Cat Care Simulator",
+    langLabel: "Language",
+    heroEyebrow: "A 15-year cat care responsibility simulator",
+    heroTitle: "Before You Adopt",
+    heroLead: "A digital cat that lets you experience responsibility before real adoption.",
+    setupTitle: "Set up the adoption scenario",
+    setupNote: "Your cat's final personality is not fixed. It changes through feeding, play, hygiene, medical care, training, and neglect.",
+    startAge: "Adoption starting point",
+    sex: "Cat sex",
+    coat: "Cat appearance",
+    catName: "Cat name",
+    fund: "Starting care fund",
+    startButton: "Start yearly care simulation",
+    perTurn: "One click = one year",
+    progressButton: "Progress",
+    summaryButton: "Summary",
+    resetButton: "Restart",
+    nextYear: "Go to next year",
+    fundLeft: "Remaining fund",
+    spentTotal: "Total spent",
+    yearSpent: "This year spent",
+    noBill: "No bill yet",
+    annualNeeds: "This year",
+    sudden: "Event",
+    shop: "Shop",
+    shopShelf: "Supplies shelf",
+    inventory: "Inventory",
+    durability: "Item lifespan",
+    achievements: "Bonding milestones",
+    history: "Life record",
+    log: "Session log",
+    effortTitle: "Care workload",
+    lifeProgress: "Life progress",
+    evolutionTable: "3×3 Adult evolution map",
+    summaryEyebrow: "Cat life simulation complete",
+    summaryDone: "Life completed.",
+    summaryLabels: ["Total spent", "Projected lifetime", "Play sessions", "Neglect days", "Medical events", "Medical spending", "Largest bill", "Cost of delay", "Major choices", "Final growth", "Buried risks", "Annual reviews"],
+    reviewRecord: "Records left by annual reviews",
+    finalQuestion: "If this were not a digital cat but a real life, would you still start?",
+    readyButton: "I'm ready",
+    notReadyButton: "I'm not ready",
+    playAgain: "Try again",
+    medeciEyebrow: "Next step in real care",
+    medeciText: "If this were a real cat, the owner would need to manage diet, vaccines, neutering, follow-ups, chronic illness, senior care, and end-of-life companionship. MedeciPets helps owners manage the full life cycle of cat care.",
+    medeciLink: "Visit MedeciPets",
+  },
+};
+
+const actionTitleEn = {
+  nutrition: "Food",
+  supplies: "Supplies",
+  hygiene: "Hygiene",
+  enrichment: "Play",
+  training: "Training",
+  sleep: "Night routine",
+  vet: "Medical",
+  lifestyle: "Safety / travel",
+};
+
+const sceneTitleEn = {
+  living: "Living room",
+  balcony: "Balcony",
+  bedroom: "Bedroom",
+  garden: "Yard",
+  shop: "Shop",
+  park: "Park",
+  friend: "Friend's home",
+};
+
+function copy(key) {
+  return uiCopy[currentLang]?.[key] || uiCopy.zh[key] || key;
+}
+
+function actionTitle(key) {
+  return currentLang === "en" ? actionTitleEn[key] || actionMeta[key]?.title || key : actionMeta[key]?.title || key;
+}
+
+function sceneTitle(key) {
+  return currentLang === "en" ? sceneTitleEn[key] || sceneMeta[key]?.title || key : sceneMeta[key]?.title || key;
+}
+
+const itemNamesEn = {
+  dryFood: "Dry food",
+  freezeDry: "Freeze-dried treats",
+  freshFood: "Fresh food",
+  wetFood: "Wet food",
+  treats: "Treat sticks",
+  litter: "Cat litter",
+  litterBox: "Litter box",
+  foodBowl: "Food/water bowls",
+  filter: "Water fountain filter",
+  wandToy: "Wand toy",
+  mouseToy: "Mouse toy",
+  puzzleToy: "Puzzle toy",
+  scratcher: "Scratcher",
+  catBed: "Cat bed",
+  catTree: "Cat tree",
+  outfit: "Cat outfit",
+  cleaner: "Cleaning supplies",
+  medicine: "Basic medicine",
+  carrier: "Carrier",
+  sitterTicket: "Pet sitter voucher",
+  windowNet: "Window net",
+};
+
+const shopCopyEn = {
+  dryFood: ["Dry food bag", "Affordable and stable, but moisture must be managed."],
+  wetFood: ["Wet food case", "Better hydration, useful for low appetite or senior cats."],
+  freezeDry: ["Freeze-dried treats", "High happiness, but too much can cause weight gain."],
+  treats: ["Treat sticks", "Good for reward or comfort, not a meal replacement."],
+  litter: ["Cat litter bag", "A consumable that hygiene care uses up."],
+  litterBox: ["Litter box", "A basic living item, not a decoration."],
+  foodBowl: ["Food/water bowls", "Affects daily feeding and drinking."],
+  filter: ["Water fountain filter", "A consumable; not changing it affects water quality."],
+  scratcher: ["Cat scratcher", "Lowers sofa-scratching risk."],
+  wandToy: ["Wand toy", "Basic item for play interactions."],
+  mouseToy: ["Mouse toy", "Supports chase-style play."],
+  puzzleToy: ["Puzzle toy", "Reduces boredom, especially for high-need cats."],
+  windowNet: ["Window net installation", "Not a cute accessory. This is a safety baseline."],
+  carrier: ["Carrier", "Needed for vet visits, moving, travel, and emergencies."],
+  vaccine: ["First vaccine", "A core early-life medical cost."],
+  neuter: ["Neutering surgery", "Male and female cats face different real-life risks if skipped."],
+  catBed: ["Cat bed", "Makes the bedroom feel more like a cat home."],
+  catTree: ["Cat tree", "Supports activity needs and room decoration."],
+  outfit: ["Cat outfit", "Included as a dressing item; not every cat enjoys it."],
+};
+
+const evolutionCopyEn = {
+  "low-lazy": ["Distant Street Cat", "Low bonding, low activity. The cat learns to expect less from humans.", "Keeps more distance and rarely initiates contact."],
+  "mid-lazy": ["Sofa Cat", "Basic safety exists, but activity and weight management are weak.", "Often lounges around and reacts faster to food than toys."],
+  "high-lazy": ["Cuddly Lap Cat", "Trusts you deeply, but stimulation is low and weight risk rises.", "Moves closer to the screen as if asking for a cuddle."],
+  "low-balanced": ["Cool Model Cat", "Care is passable, but emotional distance remains.", "Sits neatly, grooms often, and keeps some distance."],
+  "mid-balanced": ["Everyday House Cat", "Bonding and activity are both steady.", "Walks around normally and occasionally asks for attention."],
+  "high-balanced": ["Gentle Guardian Cat", "High bonding and stable routine. The cat quietly stays with you.", "Slow blinks more often and sits beside you calmly."],
+  "low-active": ["Hunter Cat", "Active but not close, like an independent indoor explorer.", "Patrols the room and watches windows and toys."],
+  "mid-active": ["Playful Athlete Cat", "Energy has an outlet, but companionship still needs work.", "Jumps around, knocks things over, and may run at night."],
+  "high-active": ["Adventure Hero Cat", "High bonding and high activity. The cat trusts you and explores bravely.", "Explores actively and handles new scenes better."],
+};
+
+const effortCopyEn = {
+  basic: ["Basic maintenance", "Roughly feeding, litter work, and a few urgent tasks. It keeps the cat alive, but companionship, prevention, and enrichment are still thin."],
+  steady: ["Responsible care", "Includes daily food, hygiene, basic play, supplies, or health checks. This is closer to realistic responsible care."],
+  heavy: ["High workload", "Usually means illness, deep cleaning, travel care, behavior work, or several big tasks stacked together. It eats into rest and emotional capacity."],
+};
+
+const stageCopyEn = {
+  kitten: ["Kitten stage", "Vaccines, neutering, window safety, and litter habits all start here."],
+  teen: ["Teen stage", "High energy. Damage, window climbing, stress, and escape risks show up more."],
+  adult: ["Adult stage", "Looks stable, but fixed costs, companionship, and weight management continue."],
+  mature: ["Mature stage", "Chronic illness risk starts rising. Checkups cannot keep being delayed."],
+  senior: ["Senior stage", "Kidneys, joints, appetite, follow-ups, and quality of life become central."],
+};
+
+const profileCopyEn = {
+  worker: ["Sharp realist", "Blunt and practical; stress can make damage risk rise."],
+  innocent: ["Innocent truth-teller", "Needs more companionship and shows illness clues earlier."],
+  wise: ["Gentle mentor", "More stable, but keeps reminding you of long-term responsibility."],
+  philosopher: ["Lazy philosopher", "More prone to laziness and weight gain, so diet and toy management matter."],
+};
+
+function itemName(key) {
+  return currentLang === "en" ? itemNamesEn[key] || itemNames[key] || key : itemNames[key] || key;
+}
+
+function shopLabel(item) {
+  return currentLang === "en" ? shopCopyEn[item.id]?.[0] || item.label : item.label;
+}
+
+function shopDetail(item) {
+  return currentLang === "en" ? shopCopyEn[item.id]?.[1] || item.detail : item.detail;
+}
+
+function evolutionText(key, field) {
+  if (currentLang !== "en") return evolutionVisualMeta[key]?.[field];
+  const index = field === "title" ? 0 : field === "detail" ? 1 : 2;
+  return evolutionCopyEn[key]?.[index] || evolutionVisualMeta[key]?.[field];
+}
+
+function effortText(range, field = "label") {
+  if (currentLang !== "en") return range[field];
+  const item = effortCopyEn[range.id];
+  return field === "label" ? item?.[0] || range.label : item?.[1] || range.detail;
+}
+
+function stageText(st, field = "name") {
+  if (currentLang !== "en") return st[field];
+  const item = stageCopyEn[st.id];
+  return field === "name" ? item?.[0] || st.name : item?.[1] || st.label;
+}
+
+function profileText(field = "name") {
+  if (currentLang !== "en") return profile()[field];
+  const item = profileCopyEn[state.personality];
+  return field === "name" ? item?.[0] || profile().name : item?.[1] || profile().trait;
+}
+
+function energyText(value) {
+  return currentLang === "en" ? `Effort ${value}` : `精力${value}`;
+}
+
+function deathReasonText(reason = "") {
+  if (currentLang !== "en") return reason;
+  const offlineMatch = reason.match(/離開了\s*(\d+)\s*小時/);
+  if (offlineMatch) return `You were away for ${offlineMatch[1]} hours, beyond the care limit. The cat passed away without care.`;
+  if (/窗|跌|墜/.test(reason)) return "A preventable window or fall accident happened.";
+  if (/病|健康|風險/.test(reason)) return "Health risk became too high and the cat passed away.";
+  return reason;
+}
 
 const catPalettes = {
   orange: { fur: "#d98a34", dark: "#7c461d", light: "#ffe0ad", chest: "#fff2dc", stripe: "#a96a31", eye: "#d8b34d" },
@@ -128,6 +388,125 @@ function updateStartCatImage() {
   setCatImage("#hero-cat-image", $("#cat-coat-input")?.value || "orange");
 }
 
+function setLabelText(inputSelector, text) {
+  const label = $(inputSelector)?.parentElement;
+  if (label?.childNodes?.[0]) label.childNodes[0].textContent = text;
+}
+
+function setOptions(selectSelector, options) {
+  const select = $(selectSelector);
+  if (!select) return;
+  options.forEach(([value, label]) => {
+    const option = select.querySelector(`option[value="${value}"]`);
+    if (option) option.textContent = label;
+  });
+}
+
+function applyLanguage() {
+  document.documentElement.lang = currentLang === "en" ? "en" : "zh-Hant";
+  document.title = copy("docTitle");
+  $("#language-input").value = currentLang;
+  $("#language-input-game").value = currentLang;
+  $("#language-input-summary").value = currentLang;
+  const languageSwitch = $(".language-switch");
+  if (languageSwitch?.childNodes?.[0]) languageSwitch.childNodes[0].textContent = copy("langLabel");
+  $(".hero-copy .eyebrow").textContent = copy("heroEyebrow");
+  $(".hero-copy h1").textContent = copy("heroTitle");
+  $(".hero-copy .lead").textContent = copy("heroLead");
+  $(".setup-panel h2").textContent = copy("setupTitle");
+  $(".setup-note").textContent = copy("setupNote");
+  setLabelText("#start-age-input", copy("startAge"));
+  setLabelText("#cat-sex-input", copy("sex"));
+  setLabelText("#cat-coat-input", copy("coat"));
+  setLabelText("#cat-name-input", copy("catName"));
+  setLabelText("#fund-input", copy("fund"));
+  setOptions("#start-age-input", currentLang === "en"
+    ? [["0", "Kitten: unknown personality"], ["12", "1-year-old cat: known personality"], ["36", "3+ year adult cat: 10 years remaining"]]
+    : [["0", "幼貓：性格未知，從頭養起"], ["12", "1歲貓：已知性格，走到15歲"], ["36", "3歲以上成貓：已知性格，只剩10年"]]);
+  setOptions("#cat-sex-input", currentLang === "en" ? [["female", "Female"], ["male", "Male"]] : [["female", "女貓"], ["male", "男貓"]]);
+  setOptions("#cat-coat-input", currentLang === "en"
+    ? [["orange", "Orange"], ["blue", "Blue"], ["tuxedo", "Tuxedo"], ["silver", "Silver shaded"], ["cream", "Cream / ragdoll"], ["siamese", "Siamese point"]]
+    : [["orange", "橘貓"], ["blue", "藍貓"], ["tuxedo", "藍白/黑白"], ["silver", "銀漸層"], ["cream", "布偶/奶油色"], ["siamese", "暹羅重點色"]]);
+  const personalityCopy = currentLang === "en"
+    ? {
+        worker: ["Sharp realist", "Practical, blunt, and painfully honest"],
+        innocent: ["Innocent truth-teller", "Simple words, honest consequences"],
+        wise: ["Gentle mentor", "Warm, mature, and quietly direct"],
+        philosopher: ["Lazy philosopher", "Relaxed, funny, and pointed"],
+      }
+    : {
+        worker: ["毒舌社畜型", "現實、尖銳、港式挖苦"],
+        innocent: ["天真殘酷型", "單純地講出最真實的事"],
+        wise: ["可愛老練型", "溫柔、成熟、像一位小老師"],
+        philosopher: ["廢柴哲學型", "懶洋洋，但句句入肉"],
+      };
+  $$(".personality-card").forEach((card) => {
+    const item = personalityCopy[card.dataset.personality];
+    if (item) {
+      card.querySelector("strong").textContent = item[0];
+      card.querySelector("span").textContent = item[1];
+    }
+  });
+  $("#start-button").textContent = copy("startButton");
+  $(".topbar .eyebrow").textContent = copy("perTurn");
+  $("#fast-forward-button").textContent = copy("progressButton");
+  $("#summary-button").textContent = copy("summaryButton");
+  $("#reset-button").textContent = copy("resetButton");
+  $("#next-day-button").textContent = copy("nextYear");
+  $$(".scene-button").forEach((button) => {
+    button.textContent = sceneTitle(button.dataset.scene);
+  });
+  $$(".pet-menu [data-action]").forEach((button) => {
+    button.querySelector("strong").textContent = actionTitle(button.dataset.action);
+  });
+  const moneyLabels = currentLang === "en" ? ["Remaining fund"] : [copy("fundLeft")];
+  $(".money-card > span").textContent = moneyLabels[0];
+  const statLabels = currentLang === "en"
+    ? ["Hunger", "Mood", "Cleanliness", "Hydration", "Stress", "Bonding", "Activity", "Night disturbance", "Litter dirt", "Behavior stability", "Health risk", "Responsibility level", "Time used this year", "Effort spent"]
+    : ["飽肚", "心情", "清潔", "水分", "壓力", "親密", "活動量", "夜間干擾", "砂盆髒污", "行為穩定", "健康風險", "責任等級", "今年已用時間", "已付出精力"];
+  $$(".stats-grid > div > span").forEach((node, index) => {
+    const infoButton = node.querySelector(".info-button");
+    node.textContent = statLabels[index] || node.textContent;
+    if (infoButton) node.appendChild(infoButton);
+  });
+  $(".owner-effort-card h3").textContent = copy("effortTitle");
+  $(".timeline-head span").textContent = copy("lifeProgress");
+  const summaries = $$(".side-panel summary");
+  [copy("inventory"), copy("durability"), copy("achievements"), copy("history"), copy("log")].forEach((label, index) => {
+    if (summaries[index]) summaries[index].textContent = label;
+  });
+  $(".evolution-card summary").textContent = copy("evolutionTable");
+  $(".daily-needs > div > span").textContent = copy("annualNeeds");
+  $("#choice-panel .eyebrow").textContent = copy("sudden");
+  $("#shop-panel .eyebrow").textContent = copy("shop");
+  $("#shop-panel h3").textContent = copy("shopShelf");
+  $(".summary-panel > .eyebrow").textContent = copy("summaryEyebrow");
+  $(".summary-panel h2").textContent = copy("summaryDone");
+  $$(".summary-grid span").forEach((node, index) => {
+    node.textContent = copy("summaryLabels")?.[index] || node.textContent;
+  });
+  $(".reflection h3").textContent = copy("reviewRecord");
+  const reflectionBlocks = $$(".summary-panel .reflection");
+  if (reflectionBlocks[1]) reflectionBlocks[1].querySelector("h3").textContent = copy("finalQuestion");
+  $("#ready-button").textContent = copy("readyButton");
+  $("#not-ready-button").textContent = copy("notReadyButton");
+  $("#play-again-button").textContent = copy("playAgain");
+  $(".medeci-card .eyebrow").textContent = copy("medeciEyebrow");
+  $(".medeci-card p:not(.eyebrow)").textContent = copy("medeciText");
+  $(".medeci-link").textContent = copy("medeciLink");
+  syncStartAgeUi();
+}
+
+function setLanguage(lang) {
+  currentLang = lang === "en" ? "en" : "zh";
+  localStorage.setItem(LANG_KEY, currentLang);
+  applyLanguage();
+  if (state) {
+    if (state.death || state.month > lifeEndMonth()) finishGame();
+    else render();
+  }
+}
+
 const profiles = {
   worker: {
     name: "毒舌社畜型",
@@ -205,6 +584,24 @@ const actionMiniMeta = {
   vet: { item: "🧳", target: "🩺", verb: "帶去檢查", hint: "把外出籠帶到醫院。", reaction: "startled", done: "檢查完成。" },
   lifestyle: { item: "🗓", target: "🏠", verb: "安排照顧", hint: "把照顧安排放進行程。", reaction: "calm", done: "安排好了。" },
 };
+
+const actionMiniMetaEn = {
+  nutrition: { verb: "Put food in the bowl", hint: "Drag the food to the bowl, or tap it.", done: "Fed." },
+  supplies: { verb: "Pack supplies", hint: "Move the supply box into the inventory.", done: "Supplies packed." },
+  hygiene: { verb: "Clean the litter area", hint: "Tap to clean until it is done.", done: "Cleaned." },
+  enrichment: { verb: "Play and burn energy", hint: "Use the toy so the cat can chase.", done: "Played enough." },
+  training: { verb: "Reward correctly", hint: "Reward the right moment instead of scolding.", done: "The cat learned a little." },
+  sleep: { verb: "Dim the routine", hint: "Slow the night routine down.", done: "Calmed down." },
+  vet: { verb: "Go to checkup", hint: "Bring the carrier to the clinic.", done: "Checkup finished." },
+  lifestyle: { verb: "Arrange care", hint: "Put the care plan into the schedule.", done: "Care arranged." },
+};
+
+function miniMeta(action) {
+  const meta = actionMiniMeta[action] || actionMiniMeta.enrichment;
+  if (currentLang !== "en") return meta;
+  const translated = actionMiniMetaEn[action] || actionMiniMetaEn.enrichment;
+  return { ...meta, ...translated };
+}
 
 const evolutionVisualMeta = {
   "low-lazy": { icon: "…", title: "冷漠街貓", detail: "親密低、活動低，牠學會少期待人。", behavior: "離你遠一點，較少主動互動。", mark: "…", className: "cat-evo-low-lazy" },
@@ -361,6 +758,61 @@ const actionChoices = {
   ],
 };
 
+const actionChoiceCopyEn = {
+  nutrition: [
+    ["Buy a large dry food bag for the year", "Stable and cheaper, but hydration still needs work."],
+    ["Buy wet food for mixed feeding", "Can be combined with dry or fresh food. Better hydration, higher cost and cleanup."],
+    ["Buy freeze-dried food as yearly add-ons", "Cats often love it, but it should not become the main diet."],
+    ["Prepare fresh food", "Costs the most time and effort, but improves hydration, bonding, and health."],
+    ["Feed from inventory", "Uses stored food. No new spending, but fails if inventory is empty."],
+  ],
+  supplies: [
+    ["Check existing items without buying new ones", "Items with lifespan do not need to be repurchased if still usable."],
+    ["Refill litter and filters only", "These are consumables. This is not buying every durable again."],
+    ["Replace scratcher/wand toy only if needed", "The system only charges for missing, broken, or expired items."],
+    ["Prepare carrier/pet sitter buffer", "Reusable carrier is not repurchased if still valid; sitter vouchers are service buffers."],
+  ],
+  hygiene: [
+    ["Scoop and refill litter", "Uses inventory litter. If missing, the yearly preview adds the purchase cost."],
+    ["Scoop only, no refill", "No consumable cost, but limited effect and more long-term hygiene risk."],
+    ["Brush and wipe the cat", "Not every cat enjoys it, but it reduces odor and hairball issues."],
+    ["Deep-clean the environment", "Includes litter-area work, floors, and vomit cleanup. More tiring than daily cleaning."],
+  ],
+  enrichment: [
+    ["Play with wand toy", "Needs a wand toy. Missing or expired toys are added to the preview cost."],
+    ["Buy puzzle toy and train", "Costs money and attention, but reduces boredom over time."],
+    ["Cuddle / pet / sit together", "No money, but lots of time. High bonding unlocks milestones."],
+    ["Chase mini game", "Needs a mouse toy. Replacement is added only if missing or expired."],
+  ],
+  training: [
+    ["Redirect sofa scratching to a scratcher", "Needs a scratcher. Correct guidance lowers damage and stress."],
+    ["Stop biting and offer an alternative toy", "Sets boundaries without scolding. It takes patience."],
+    ["Scold loudly to stop it", "May look effective short-term, but raises stress and lowers trust."],
+  ],
+  sleep: [
+    ["Put toys away, feed on schedule, dim lights", "Builds a night rhythm and reduces night disruption. The habit gets cheaper over time."],
+    ["Use daytime play for calmer nights", "Burns energy during the day instead of forcing the cat to sleep."],
+    ["Ignore night running", "The cat may be fine, but the owner pays with sleep and conflict risk."],
+  ],
+  vet: [
+    ["Basic clinic checkup", "Useful for ordinary status and lowers some health risk."],
+    ["Full blood and urine tests", "Expensive and time-consuming, but important for middle-aged and senior cats."],
+    ["Neutering / dental / targeted treatment", "Large medical cost with real time, transport, and recovery burden."],
+  ],
+  lifestyle: [
+    ["Install window net", "One major safety cost that lowers fall risk. Replacement is needed roughly every 60 months."],
+    ["Arrange travel pet sitter", "Pay for care while you are away. Responsibility does not pause."],
+    ["Practice carrier training", "Needs a carrier. Repeated practice lowers vet-visit panic."],
+  ],
+};
+
+function actionChoiceText(action, choice, index, field = "label") {
+  if (currentLang !== "en") return choice[field] || "";
+  const translated = actionChoiceCopyEn[action]?.[index];
+  if (!translated) return choice[field] || "";
+  return field === "label" ? translated[0] : translated[1];
+}
+
 const achievementRules = [
   {
     id: "lap",
@@ -393,6 +845,20 @@ const achievementRules = [
     unlocked: (s) => s.month >= 120 && s.bonding >= 70,
   },
 ];
+
+const achievementCopyEn = {
+  lap: ["Sits on your lap", "Because you kept showing up, the cat starts treating your lap as a safe place."],
+  hold: ["Allows a short hold", "The cat is not merely tolerating you; it briefly trusts your arms."],
+  kiss: ["Allows a forehead kiss", "Bonding is not bought. It grows after many moments of not being ignored."],
+  carrierTrust: ["Trusts you more outside", "Because you practiced carrier training, vet visits no longer equal total panic."],
+  oldFriend: ["Old friend", "The cat is older but still comes close. This is what long-term care leaves behind."],
+};
+
+function achievementText(rule, field = "title") {
+  if (currentLang !== "en") return rule[field];
+  const item = achievementCopyEn[rule.id];
+  return field === "title" ? item?.[0] || rule.title : item?.[1] || rule.text;
+}
 
 const randomDrops = [
   {
@@ -843,7 +1309,17 @@ function ensureStateShape() {
 function setScene(scene) {
   state.currentScene = scene;
   state.currentAction = null;
-  $("#cat-line").textContent = sceneMeta[scene]?.line || pick("idle");
+  $("#cat-line").textContent = currentLang === "en"
+    ? {
+        living: "Daily care hub: feeding, play, and status checks.",
+        balcony: "Window safety matters here. This scene affects fall risk.",
+        bedroom: "Sleep and bonding scene, useful for calming and rest.",
+        garden: "A controlled outdoor space at home: more activity, still your responsibility.",
+        shop: "Buy food, supplies, toys, decor, and medical preparation here.",
+        park: "Real outdoor stimulation: more exciting, but also more risk.",
+        friend: "A visit/social scene for future friend-home gameplay.",
+      }[scene] || pick("idle")
+    : sceneMeta[scene]?.line || pick("idle");
   saveGame();
   render();
 }
@@ -878,26 +1354,37 @@ function advanceMiniProgress(amount = 25) {
 }
 
 function shortCareResult(action, effects) {
-  const meta = actionMiniMeta[action] || actionMiniMeta.enrichment;
+  const meta = miniMeta(action);
   const cost = [];
   if (effects.money) cost.push(money.format(effects.money));
   if (effects.time) cost.push(`${effects.time}h`);
-  if (effects.energy) cost.push(`精力${effects.energy}`);
+  if (effects.energy) cost.push(energyText(effects.energy));
   return `${meta.done} ${cost.join(" · ")}`;
 }
 
 function currentNeeds() {
   const st = stage();
-  const descriptions = {
-    nutrition: st.id === "senior" ? "老年濕糧、藥物、飲水與食慾管理" : "糧、濕糧、零食控制與飲水管理",
-    supplies: st.id === "kitten" ? "起始用品、窗網、水機、抓板、外出籠；特殊情況會由系統強制提醒" : "貓砂、濾芯、玩具、抓板、清潔用品損耗；過期會由系統強制提醒",
-    hygiene: "砂盆、毛髮、嘔吐物、環境清潔，會吃時間和精力",
-    enrichment: profile().socialNeed > 1 ? "這種性格更需要陪伴，少玩會更失落" : "陪玩、玩具輪替、環境刺激，避免壓力和拆家",
-    training: "抓沙發、咬人、亂跳不是壞，而是需要引導；錯誤管教會留下怕人和壓力埋雷",
-    sleep: "夜間節奏、白天活動消耗、半夜跑酷管理；不是貓白天不能睡，而是避免主人被長期吵醒",
-    vet: st.id === "kitten" ? "疫苗、絕育、生病會變成強提醒；一般成年每12個月檢查，老年每6個月" : st.id === "senior" ? "老年期每6個月血檢、尿檢、覆診；超過就算拖延" : "成年每12個月健康檢查；牙齒、尿液、突發病追蹤；超過就算拖延",
-    lifestyle: "旅行、出差、窗網、寄養、上門照顧與安全安排；窗網過期會強制處理",
-  };
+  const descriptions = currentLang === "en"
+    ? {
+        nutrition: st.id === "senior" ? "Senior wet food, medication, hydration, and appetite management" : "Food, wet food, treat limits, and hydration management",
+        supplies: st.id === "kitten" ? "Starter items, window nets, fountain, scratcher, and carrier; special issues become forced reminders" : "Litter, filters, toys, scratchers, cleaning supplies, and expiry reminders",
+        hygiene: "Litter, grooming, vomit, and home cleaning all cost time and energy",
+        enrichment: profile().socialNeed > 1 ? "This personality needs more companionship; less play hurts mood faster" : "Play, toy rotation, and enrichment prevent stress and damage",
+        training: "Scratching, biting, and jumping need guidance; harsh discipline creates stress and hidden risk",
+        sleep: "Night rhythm and daytime activity management; the point is reducing night disruption",
+        vet: st.id === "kitten" ? "Vaccines, neutering, and illness become strong reminders; adults need yearly checks, seniors every 6 months" : st.id === "senior" ? "Senior blood tests, urine tests, and follow-ups every 6 months; longer is delay" : "Adult checkups every 12 months; teeth, urine, and sudden illness tracking",
+        lifestyle: "Travel, window nets, boarding, sitters, and home safety; expired window safety becomes forced",
+      }
+    : {
+        nutrition: st.id === "senior" ? "老年濕糧、藥物、飲水與食慾管理" : "糧、濕糧、零食控制與飲水管理",
+        supplies: st.id === "kitten" ? "起始用品、窗網、水機、抓板、外出籠；特殊情況會由系統強制提醒" : "貓砂、濾芯、玩具、抓板、清潔用品損耗；過期會由系統強制提醒",
+        hygiene: "砂盆、毛髮、嘔吐物、環境清潔，會吃時間和精力",
+        enrichment: profile().socialNeed > 1 ? "這種性格更需要陪伴，少玩會更失落" : "陪玩、玩具輪替、環境刺激，避免壓力和拆家",
+        training: "抓沙發、咬人、亂跳不是壞，而是需要引導；錯誤管教會留下怕人和壓力埋雷",
+        sleep: "夜間節奏、白天活動消耗、半夜跑酷管理；不是貓白天不能睡，而是避免主人被長期吵醒",
+        vet: st.id === "kitten" ? "疫苗、絕育、生病會變成強提醒；一般成年每12個月檢查，老年每6個月" : st.id === "senior" ? "老年期每6個月血檢、尿檢、覆診；超過就算拖延" : "成年每12個月健康檢查；牙齒、尿液、突發病追蹤；超過就算拖延",
+        lifestyle: "旅行、出差、窗網、寄養、上門照顧與安全安排；窗網過期會強制處理",
+      };
   const required = ["nutrition", "hygiene", "enrichment"];
   if (((state.habits.sleepRoutine || 0) < 3 && state.boredom > 45) || state.sleepDebt > 45) required.push("sleep");
   const nearExpired = Object.keys(durableItemRules).some((id) => state.durables[id] && durableMonthsLeft(id) <= 2);
@@ -907,7 +1394,9 @@ function currentNeeds() {
   if (!state.lastVetAt || state.month - state.lastVetAt >= vetDueMonths || state.healthRisk > 45) required.push("vet");
   if (!state.flags.windowNet || state.accidentRisk > 42 || state.month % 18 === 0) required.push("lifestyle");
   return {
-    title: `${st.name}：第 ${playYearIndex()}/${playableYears()} 年，${personalityVisible() ? profile().name : "性格未明"}`,
+    title: currentLang === "en"
+      ? `${stageText(st)}: Year ${playYearIndex()}/${playableYears()}, ${personalityVisible() ? profileText("name") : "personality unknown"}`
+      : `${st.name}：第 ${playYearIndex()}/${playableYears()} 年，${personalityVisible() ? profile().name : "性格未明"}`,
     descriptions,
     required,
   };
@@ -916,6 +1405,19 @@ function currentNeeds() {
 function yearlyRiskPreview() {
   const risks = [];
   const ageYears = Math.floor((state.month - 1) / 12);
+  if (currentLang === "en") {
+    if (!hasValidDurable("windowNet")) risks.push("No valid window net: fall/window accident risk");
+    if (!state.flags.neutered && state.month >= 6) risks.push(state.sex === "male" ? "Unneutered male: spraying, aggression, night calls" : "Unneutered female: repeated heat and pyometra risk");
+    const vetDue = stage().id === "senior" ? 6 : 12;
+    if (!state.lastVetAt || state.month - state.lastVetAt >= vetDue) risks.push("Checkup due: small illness may become expensive");
+    if (state.hydration < 60 || ageYears >= 7) risks.push("Hydration/age risk: kidney and urinary issues");
+    if (state.cleanliness < 65 || state.poopLevel > 55) risks.push("Poor hygiene: urinary, skin, and odor problems");
+    if (state.boredom > 55 || state.activity < 35) risks.push("Low enrichment: damage, obesity, night running");
+    if (state.suppliesWear > 55) risks.push("Item wear: toys, scratchers, and filters need replacement");
+    if (state.stress > 60) risks.push("High stress: appetite drop, aggression, or hiding");
+    if (!risks.length) risks.push("Stable this year, but vaccines, hygiene, and play still matter");
+    return risks.slice(0, 4);
+  }
   if (!hasValidDurable("windowNet")) risks.push("窗網未處理：跌落/爬窗事故");
   if (!state.flags.neutered && state.month >= 6) risks.push(state.sex === "male" ? "未絕育男貓：亂尿、攻擊、夜叫" : "未絕育女貓：反覆發情與子宮蓄膿風險");
   const vetDue = stage().id === "senior" ? 6 : 12;
@@ -931,7 +1433,7 @@ function yearlyRiskPreview() {
 
 function applyAction(action) {
   if (state.currentEvent) {
-    showBanner("先回應目前的強提醒；你可以處理，也可以選擇延後並承擔後續風險。");
+    showBanner(currentLang === "en" ? "Respond to the current strong reminder first. You can handle it or delay it and accept future risk." : "先回應目前的強提醒；你可以處理，也可以選擇延後並承擔後續風險。");
     return;
   }
   state.currentAction = action;
@@ -1126,6 +1628,29 @@ const statInfo = {
   },
 };
 
+const statInfoEn = {
+  "stat-hunger": ["Hunger", "0-30 means long-term poor feeding or failed diet setup; 70-100 means stable food. Very high is not always better if weight also rises."],
+  "stat-happiness": ["Mood", "Low mood raises damage, night running, and distance from humans. It is affected by play, environment, illness, and harsh discipline."],
+  "stat-cleanliness": ["Cleanliness", "Low cleanliness raises skin, gut, urinary, and odor problems. It covers litter, grooming, and home hygiene."],
+  "stat-hydration": ["Hydration", "Low hydration increases urinary risk. Wet food, clean water, stress, and litter-box quality all matter."],
+  "stat-stress": ["Stress", "Higher is worse. High stress raises illness, aggression, spraying, night running, and lower bonding."],
+  "stat-bonding": ["Bonding", "Low bonding means the cat trusts you less. High bonding unlocks lap sitting, holding, and forehead-kiss milestones."],
+  "stat-activity": ["Activity", "Low activity raises obesity and night-burst risk. Activity helps determine the adult evolution branch."],
+  "stat-sleep": ["Night disturbance", "Higher means the owner is more affected by night running or calling. It raises fatigue and conflict risk."],
+  "stat-poop": ["Litter dirt", "Higher is dirtier. Dirty litter raises odor, litter refusal, and urinary risk."],
+  "stat-discipline": ["Behavior stability", "This is not obedience. It reflects whether the owner guides behavior correctly and reduces stress."],
+  "stat-risk": ["Health risk", "Higher risk makes illness, forced reminders, and death more likely. Vaccines, neutering, hydration, hygiene, stress, and checkups affect it."],
+  "stat-level": ["Responsibility level", "This is player progress, not a moral score. Handling necessary care and major decisions raises it."],
+  "stat-time": ["Time used this year", "Care actions stack time: feeding, cleaning, play, appointments, shopping, and travel planning."],
+  "stat-energy": ["Effort spent", "Care effort can exceed 100. It measures workload, not a spending limit."],
+};
+
+function statInfoText(id, field = "title") {
+  if (currentLang !== "en") return statInfo[id]?.[field];
+  const item = statInfoEn[id];
+  return field === "title" ? item?.[0] || statInfo[id]?.title : item?.[1] || statInfo[id]?.text;
+}
+
 function effortLevel(value) {
   return effortRanges.find((range) => value >= range.min && value <= range.max) || effortRanges[0];
 }
@@ -1200,7 +1725,7 @@ function buildActionPlan(action, selected, intensity) {
     if (choice.consumeFood) {
       for (let i = 0; i < repeat; i += 1) {
         const foodKey = pickFoodFromInventory(tempInventory);
-        if (!foodKey) return { error: "背包沒有足夠一整年可用食物。請先去商店買食物，或取消「用背包現有食物餵」。" };
+        if (!foodKey) return { error: currentLang === "en" ? "Inventory does not contain enough food for a full year. Buy food in the shop or remove the inventory-feeding option." : "背包沒有足夠一整年可用食物。請先去商店買食物，或取消「用背包現有食物餵」。" };
         touchInventory(foodKey);
         tempInventory[foodKey] -= 1;
         addToRecord(effects.inventoryUses, foodKey, 1);
@@ -1213,7 +1738,7 @@ function buildActionPlan(action, selected, intensity) {
       const yearlyAmount = annualInventoryAmount(key, amount, repeat);
       touchInventory(key);
       if ((tempInventory[key] || 0) < yearlyAmount && choice.autoBuyMissing) buyMissingInventory(key, yearlyAmount);
-      if ((tempInventory[key] || 0) < yearlyAmount) return { error: `背包缺少一整年用量：${itemNames[key] || key}。` };
+      if ((tempInventory[key] || 0) < yearlyAmount) return { error: currentLang === "en" ? `Inventory lacks a full year's amount: ${itemName(key)}.` : `背包缺少一整年用量：${itemNames[key] || key}。` };
       tempInventory[key] -= yearlyAmount;
       addToRecord(effects.inventoryUses, key, yearlyAmount);
     }
@@ -2275,7 +2800,7 @@ function renderScene() {
   const scene = state.currentScene || "living";
   const meta = sceneMeta[scene] || sceneMeta.living;
   $(".room").dataset.scene = scene;
-  $("#scene-label").textContent = meta.title;
+  $("#scene-label").textContent = sceneTitle(scene);
   $$(".scene-button").forEach((button) => {
     button.classList.toggle("selected", button.dataset.scene === scene);
   });
@@ -2291,14 +2816,14 @@ function renderShop() {
   $("#shop-items").innerHTML = Object.entries(grouped)
     .map(([category, items]) => `
       <section class="shop-category">
-        <h4>${category}</h4>
+        <h4>${currentLang === "en" ? ({ "食物": "Food", "用品": "Supplies", "玩具": "Toys", "安全": "Safety", "醫療": "Medical", "裝飾": "Decor" }[category] || category) : category}</h4>
         <div class="shop-grid">
           ${items
             .map((item) => `
               <button class="shop-item" type="button" data-shop-item="${item.id}">
-                <strong>${item.label}</strong>
-                <span>${money.format(item.price)} · ${item.time || 0}h · 精力${item.energy || 0}</span>
-                <small>${item.detail}</small>
+                <strong>${shopLabel(item)}</strong>
+                <span>${money.format(item.price)} · ${item.time || 0}h · ${energyText(item.energy || 0)}</span>
+                <small>${shopDetail(item)}</small>
               </button>
             `)
             .join("")}
@@ -2313,22 +2838,22 @@ function renderShop() {
 
 function renderActionMini(action) {
   const actions = $("#choice-actions");
-  const meta = actionMiniMeta[action] || actionMiniMeta.enrichment;
+  const meta = miniMeta(action);
   const progress = miniProgress();
   const ready = progress >= 100;
   const mini = document.createElement("div");
   mini.className = `mini-game ${ready ? "done" : ""} ${state.actionDraft?.selected?.length ? "" : "empty"}`;
   mini.innerHTML = `
     <div class="mini-copy">
-      <strong>${state.actionDraft?.selected?.length ? meta.verb : "先選一項"}</strong>
-      <span>${state.actionDraft?.selected?.length ? meta.hint : "上面選一個或多個照顧項目，才可以動手做。"}</span>
+      <strong>${state.actionDraft?.selected?.length ? meta.verb : currentLang === "en" ? "Choose one first" : "先選一項"}</strong>
+      <span>${state.actionDraft?.selected?.length ? meta.hint : currentLang === "en" ? "Choose one or more care items above before doing the action." : "上面選一個或多個照顧項目，才可以動手做。"}</span>
     </div>
     <div class="mini-stage" aria-label="${meta.verb}">
       <button class="mini-token" type="button" draggable="true" ${state.actionDraft?.selected?.length ? "" : "disabled"}>${meta.item}</button>
       <div class="mini-target" data-mini-target>${meta.target}</div>
     </div>
     <div class="mini-meter" aria-hidden="true"><span style="width:${progress}%"></span></div>
-    <button class="ghost-button mini-action" type="button" ${state.actionDraft?.selected?.length && !ready ? "" : "disabled"}>${ready ? "動作完成" : meta.verb}</button>
+    <button class="ghost-button mini-action" type="button" ${state.actionDraft?.selected?.length && !ready ? "" : "disabled"}>${ready ? currentLang === "en" ? "Action complete" : "動作完成" : meta.verb}</button>
   `;
   actions.appendChild(mini);
   const token = mini.querySelector(".mini-token");
@@ -2413,16 +2938,27 @@ function renderChoicePanel() {
 
   if (state.currentAction) {
     const action = state.currentAction;
-    const compactIntro = {
-      nutrition: "選今個月點餵。可以混合，但錢、時間和精力會疊加。",
-      supplies: "只補缺的和快壞的，不需要每次全買。",
-      hygiene: "清砂、深清、梳毛都會吃時間。你選多少，牠就承受多少結果。",
-      enrichment: "陪玩不是裝飾，是消耗精力、建立親密和減少拆家的方式。",
-      training: "用正確方法引導。粗暴處理會影響親密和壓力。",
-      sleep: "處理夜間跑酷和作息，不是禁止貓白天睡覺。",
-      vet: "檢查、疫苗、覆診和治療都在這裡處理。",
-      lifestyle: "旅行、外出、上門照顧和居家安全安排。",
-    };
+    const compactIntro = currentLang === "en"
+      ? {
+          nutrition: "Choose how to feed this year. Mixed feeding is allowed, but money, time, and effort stack up.",
+          supplies: "Only refill what is missing or close to breaking. You do not need to buy everything every time.",
+          hygiene: "Litter work, deep cleaning, and grooming all cost time. The cat lives with what you choose.",
+          enrichment: "Play is not decoration. It spends effort, builds bonding, and reduces damage.",
+          training: "Guide correctly. Harsh handling lowers bonding and raises stress.",
+          sleep: "Manage night running and rhythm. This is not about banning daytime sleep.",
+          vet: "Checkups, vaccines, follow-ups, and treatment are handled here.",
+          lifestyle: "Travel, outings, pet sitters, and home safety planning.",
+        }
+      : {
+          nutrition: "選今個月點餵。可以混合，但錢、時間和精力會疊加。",
+          supplies: "只補缺的和快壞的，不需要每次全買。",
+          hygiene: "清砂、深清、梳毛都會吃時間。你選多少，牠就承受多少結果。",
+          enrichment: "陪玩不是裝飾，是消耗精力、建立親密和減少拆家的方式。",
+          training: "用正確方法引導。粗暴處理會影響親密和壓力。",
+          sleep: "處理夜間跑酷和作息，不是禁止貓白天睡覺。",
+          vet: "檢查、疫苗、覆診和治療都在這裡處理。",
+          lifestyle: "旅行、外出、上門照顧和居家安全安排。",
+        };
     const draft = state.actionDraft || {
       action,
       selected: [...(state.actionPlans[action]?.selected || [])],
@@ -2434,7 +2970,7 @@ function renderChoicePanel() {
     state.actionDraft = draft;
     const preview = buildActionPlan(action, draft.selected, draft.intensity);
     panel.classList.remove("hidden");
-    $("#choice-title").textContent = actionMeta[action].title;
+    $("#choice-title").textContent = actionTitle(action);
     $("#choice-text").textContent = compactIntro[action] || currentNeeds().descriptions[action];
     $("#choice-actions").innerHTML = "";
     actionChoices[action].forEach((choice, index) => {
@@ -2449,12 +2985,14 @@ function renderChoicePanel() {
       const parts = [];
       if (annualMoney) parts.push(money.format(annualMoney));
       if (annualTime) parts.push(`${annualTime}h`);
-      if (annualEnergy) parts.push(`精力${annualEnergy}`);
+      if (annualEnergy) parts.push(energyText(annualEnergy));
       const title = document.createElement("strong");
-      title.textContent = choice.label;
+      title.textContent = actionChoiceText(action, choice, index, "label");
       const detail = document.createElement("small");
-      detail.textContent = parts.length ? `${parts.join(" / ")}${repeat > 1 ? " · 年度換算" : ""}` : choice.detail || "";
-      if (choice.detail) detail.title = repeat > 1 ? `${choice.detail}（已按一年重複照顧換算）` : choice.detail;
+      detail.textContent = parts.length ? `${parts.join(" / ")}${repeat > 1 ? currentLang === "en" ? " · yearly total" : " · 年度換算" : ""}` : actionChoiceText(action, choice, index, "detail") || "";
+      if (choice.detail) detail.title = repeat > 1
+        ? `${actionChoiceText(action, choice, index, "detail")}（${currentLang === "en" ? "converted into yearly care" : "已按一年重複照顧換算"}）`
+        : actionChoiceText(action, choice, index, "detail");
       button.append(title, detail);
       button.addEventListener("click", () => {
         const selectedSet = new Set(state.actionDraft.selected);
@@ -2477,13 +3015,17 @@ function renderChoicePanel() {
       const afterTime = (state.timeSpent || 0) + effects.time;
       const afterEnergy = (state.effortSpent || 0) + effects.energy;
       const afterLevel = effortLevel(afterEnergy);
-      const autoText = effects.autoPurchases?.length ? ` 已自動把缺少的${Array.from(new Set(effects.autoPurchases)).join("、")}加入成本。` : "";
-      const habitText = effects.habitNote ? ` ${effects.habitNote}` : "";
-      const yearText = effects.annualized ? " 已按一年重複照顧換算。" : "";
-      const billText = effects.billItems?.length
-        ? `<small>帳單：${effects.billItems.slice(0, 4).map((item) => `${item.label}${money.format(item.amount)}`).join(" / ")}</small>`
+      const autoText = effects.autoPurchases?.length
+        ? currentLang === "en"
+          ? ` Missing items have been added to the cost automatically.`
+          : ` 已自動把缺少的${Array.from(new Set(effects.autoPurchases)).join("、")}加入成本。`
         : "";
-      summary.innerHTML = `<strong>${money.format(effects.money)} · ${effects.time}h · 精力${effects.energy}</strong><span>今年累積：${afterTime}h / 精力${afterEnergy} · ${afterLevel.label}</span>${billText}<small>${yearText}${autoText}${habitText}${effects.sceneNote ? ` ${effects.sceneNote}` : ""}${effects.time > state.timeLeft ? " 今年時間不足，請調整。" : ""}</small>`;
+      const habitText = effects.habitNote ? ` ${effects.habitNote}` : "";
+      const yearText = effects.annualized ? currentLang === "en" ? " Converted into yearly repeated care." : " 已按一年重複照顧換算。" : "";
+      const billText = effects.billItems?.length
+        ? `<small>${currentLang === "en" ? "Bill" : "帳單"}：${effects.billItems.slice(0, 4).map((item) => `${item.label}${money.format(item.amount)}`).join(" / ")}</small>`
+        : "";
+      summary.innerHTML = `<strong>${money.format(effects.money)} · ${effects.time}h · ${energyText(effects.energy)}</strong><span>${currentLang === "en" ? "Year total" : "今年累積"}：${afterTime}h / ${energyText(afterEnergy)} · ${effortText(afterLevel)}</span>${billText}<small>${yearText}${autoText}${habitText}${effects.sceneNote ? ` ${effects.sceneNote}` : ""}${effects.time > state.timeLeft ? currentLang === "en" ? " Not enough time this year; adjust choices." : " 今年時間不足，請調整。" : ""}</small>`;
       if (effects.time > state.timeLeft) summary.classList.add("warning");
     }
     $("#choice-actions").appendChild(summary);
@@ -2491,14 +3033,18 @@ function renderChoicePanel() {
     confirm.type = "button";
     confirm.className = "primary-button";
     const actionReady = draft.selected.length > 0 && miniProgress() >= 100;
-    confirm.textContent = actionReady ? (state.actionPlans[action] ? "更新今年安排" : "完成照顧") : "先完成上面動作";
+    confirm.textContent = actionReady
+      ? state.actionPlans[action]
+        ? currentLang === "en" ? "Update this year's plan" : "更新今年安排"
+        : currentLang === "en" ? "Finish care" : "完成照顧"
+      : currentLang === "en" ? "Complete the action above first" : "先完成上面動作";
     confirm.disabled = !actionReady;
     confirm.addEventListener("click", confirmActionPlan);
     $("#choice-actions").appendChild(confirm);
     const cancel = document.createElement("button");
     cancel.type = "button";
     cancel.className = "ghost-button";
-    cancel.textContent = "先不做";
+    cancel.textContent = currentLang === "en" ? "Skip for now" : "先不做";
     cancel.addEventListener("click", () => {
       state.currentAction = null;
       state.actionDraft = null;
@@ -2536,25 +3082,36 @@ function renderNeeds() {
   $("#need-label").textContent = needs.title;
   const requiredSet = new Set(needs.required);
   const order = [...needs.required, ...Object.keys(actionMeta).filter((key) => !requiredSet.has(key))];
-  const shortLines = {
-    nutrition: "餵食/飲水",
-    supplies: "補貨/更換",
-    hygiene: "砂盆/清潔",
-    enrichment: "陪玩/放電",
-    training: "引導/修正",
-    sleep: "夜間節奏",
-    vet: "檢查/治療",
-    lifestyle: "安全/外出",
-  };
+  const shortLines = currentLang === "en"
+    ? {
+        nutrition: "Food/water",
+        supplies: "Refill/replace",
+        hygiene: "Litter/cleaning",
+        enrichment: "Play/activity",
+        training: "Guide/correct",
+        sleep: "Night rhythm",
+        vet: "Check/treat",
+        lifestyle: "Safety/travel",
+      }
+    : {
+        nutrition: "餵食/飲水",
+        supplies: "補貨/更換",
+        hygiene: "砂盆/清潔",
+        enrichment: "陪玩/放電",
+        training: "引導/修正",
+        sleep: "夜間節奏",
+        vet: "檢查/治療",
+        lifestyle: "安全/外出",
+      };
   $("#need-list").innerHTML = order
     .map((key) => {
       const done = Boolean(state.completedActions[key]);
       const meta = actionMeta[key];
       const needed = requiredSet.has(key);
-      const tag = done ? "完成" : needed ? "要做" : "可選";
+      const tag = currentLang === "en" ? done ? "Done" : needed ? "Need" : "Optional" : done ? "完成" : needed ? "要做" : "可選";
       return `<li class="${done ? "done" : ""} ${needed ? "needed" : "optional"}"><button type="button" class="need-choice" data-need="${key}">
         <span class="need-icon">${meta.icon}</span>
-        <strong>${meta.title}</strong>
+        <strong>${actionTitle(key)}</strong>
         <span class="need-tag">${tag} · ${shortLines[key]}</span>
         <span class="need-detail">${needs.descriptions[key]}</span>
       </button></li>`;
@@ -2569,11 +3126,13 @@ function renderInventory() {
   const entries = Object.entries(state.inventory || {}).filter(([, amount]) => amount > 0);
   const list = $("#inventory-list");
   if (!entries.length) {
-    list.innerHTML = '<li><strong>背包是空的</strong><span>點上方「商店」場景，購買食物、用品、玩具、安全、醫療和裝飾道具。</span></li>';
+    list.innerHTML = currentLang === "en"
+      ? "<li><strong>Inventory is empty</strong><span>Open the Shop scene above to buy food, supplies, toys, safety, medical, and decor items.</span></li>"
+      : '<li><strong>背包是空的</strong><span>點上方「商店」場景，購買食物、用品、玩具、安全、醫療和裝飾道具。</span></li>';
     return;
   }
   list.innerHTML = entries
-    .map(([key, amount]) => `<li><strong>${itemNames[key] || key}</strong><span>x ${amount}</span></li>`)
+    .map(([key, amount]) => `<li><strong>${itemName(key)}</strong><span>x ${amount}</span></li>`)
     .join("");
 }
 
@@ -2581,11 +3140,14 @@ function renderDurability() {
   const list = $("#durability-list");
   const entries = Object.entries(durableItemRules).map(([id, rule]) => {
     const durable = state.durables[id];
-    if (!durable) return `<li><strong>${rule.name}</strong><span>未購買/未安裝</span></li>`;
+    const name = currentLang === "en" ? itemName(id) : rule.name;
+    if (!durable) return `<li><strong>${name}</strong><span>${currentLang === "en" ? "Not bought / not installed" : "未購買/未安裝"}</span></li>`;
     const left = durableMonthsLeft(id);
     const used = Math.round(durableAge(id));
-    const status = left > 0 ? `已用 ${used}/可用 ${durable.lifespan} 個月，剩 ${Math.round(left)}；含貓咪自行使用損耗` : `已過期 ${Math.abs(Math.round(left))} 個月`;
-    return `<li class="${left <= 0 ? "expired" : ""}"><strong>${rule.name}</strong><span>${status}</span></li>`;
+    const status = currentLang === "en"
+      ? left > 0 ? `Used ${used}/${durable.lifespan} months, ${Math.round(left)} left; includes the cat's own wear` : `Expired by ${Math.abs(Math.round(left))} months`
+      : left > 0 ? `已用 ${used}/可用 ${durable.lifespan} 個月，剩 ${Math.round(left)}；含貓咪自行使用損耗` : `已過期 ${Math.abs(Math.round(left))} 個月`;
+    return `<li class="${left <= 0 ? "expired" : ""}"><strong>${name}</strong><span>${status}</span></li>`;
   });
   list.innerHTML = entries.join("");
 }
@@ -2595,10 +3157,10 @@ function renderAchievements() {
   const list = $("#achievement-list");
   const visible = achievementRules.filter((rule) => unlocked.has(rule.id));
   if (!visible.length) {
-    list.innerHTML = "<li>還沒有。多陪伴幾個月，牠才會慢慢靠近。</li>";
+    list.innerHTML = currentLang === "en" ? "<li>None yet. Keep showing up before the cat slowly comes closer.</li>" : "<li>還沒有。多陪伴幾個月，牠才會慢慢靠近。</li>";
     return;
   }
-  list.innerHTML = visible.map((rule) => `<li><strong>${rule.title}</strong><span>${rule.text}</span></li>`).join("");
+  list.innerHTML = visible.map((rule) => `<li><strong>${achievementText(rule)}</strong><span>${achievementText(rule, "text")}</span></li>`).join("");
 }
 
 function showInfo(title, text) {
@@ -2625,6 +3187,37 @@ function showInfo(title, text) {
   panel.classList.remove("hidden");
 }
 
+function explainCatMark(type) {
+  if (type === "warning") {
+    const mark = $("#cat-mark")?.textContent?.trim();
+    if (!mark) return;
+    const eventText = currentLang === "en"
+      ? state.currentEvent
+        ? `Current forced event: "${state.currentEvent.title}". Handle it or delay it, and the cat's condition and future risk will change.`
+        : state.healthRisk > 75
+          ? `Current health risk is ${Math.round(state.healthRisk)}, which means illness or death risk is already high.`
+          : state.stress > 70
+            ? `Current stress is ${Math.round(state.stress)}. The cat may hide, spray, damage things, or get sick more easily.`
+            : "This warning mark means a sudden issue, pain, or risk is happening."
+      : state.currentEvent
+        ? `現在觸發的是「${state.currentEvent.title}」。你需要先處理或選擇延後，牠的狀態和未來風險會跟著改變。`
+        : state.healthRisk > 75
+          ? `目前健康風險是 ${Math.round(state.healthRisk)}，代表疾病或病逝風險已經很高。`
+          : state.stress > 70
+            ? `目前壓力是 ${Math.round(state.stress)}，牠可能躲開、亂尿、拆家或更容易生病。`
+            : "這是提醒標記，代表有突發狀況、痛苦或風險正在發生。";
+    showInfo(mark === "痛" ? currentLang === "en" ? "Pain / medical warning" : "痛苦/醫療警示" : currentLang === "en" ? "Event / risk warning" : "突發/風險警示", eventText);
+    return;
+  }
+  const evolution = evolutionResult();
+  showInfo(
+    currentLang === "en" ? "Adult personality mark" : "成年性格標記",
+    currentLang === "en"
+      ? `The white circle is the adult personality mark. Current branch: "${evolutionText(evolution.key, "title")}". ${evolutionText(evolution.key, "detail")} Care, activity, medical care, hygiene, and neglect move the cat between branches.`
+      : `這個白色圓形是成年後的性格標記。目前是「${evolution.title}」：${evolution.detail} 牠會因你的陪伴、活動量、醫療、清潔和忽略方式，慢慢移向不同性格分支。`,
+  );
+}
+
 function renderStatInfoButtons() {
   Object.entries(statInfo).forEach(([id, info]) => {
     const value = $(`#${id}`);
@@ -2633,11 +3226,11 @@ function renderStatInfoButtons() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "info-button";
-    button.setAttribute("aria-label", `查看${info.title}說明`);
+    button.setAttribute("aria-label", currentLang === "en" ? `Show ${statInfoText(id)} info` : `查看${info.title}說明`);
     button.textContent = "i";
     button.addEventListener("click", (event) => {
       event.stopPropagation();
-      showInfo(info.title, info.text);
+      showInfo(statInfoText(id), statInfoText(id, "text"));
     });
     label.appendChild(button);
   });
@@ -2655,21 +3248,30 @@ function renderYearBrief() {
   const nextAge = ageYears + 1;
   const risks = yearlyRiskPreview();
   $("#year-brief").innerHTML = `
-    <strong>今年會直接跳到 ${nextAge} 歲：可能發生這些事</strong>
+    <strong>${currentLang === "en" ? `This click jumps to age ${nextAge}: possible issues this year` : `今年會直接跳到 ${nextAge} 歲：可能發生這些事`}</strong>
     <div class="year-risk-list">${risks.map((risk) => `<span>${risk}</span>`).join("")}</div>
-    <span>你每次不是過一個月，而是替牠承擔一整年的飲食、清潔、陪伴、安全和醫療後果。</span>
+    <span>${currentLang === "en" ? "Each click is not one month. You carry a whole year of food, hygiene, companionship, safety, and medical consequences." : "你每次不是過一個月，而是替牠承擔一整年的飲食、清潔、陪伴、安全和醫療後果。"}</span>
   `;
 }
 
 function renderVisualStatus() {
-  const chips = [
-    { icon: state.hunger < 45 ? "🍚" : "🥣", label: state.hunger < 45 ? "餓" : "飽", state: state.hunger < 45 ? "problem" : "good" },
-    { icon: state.cleanliness < 50 || state.poopLevel > 65 ? "💩" : "✨", label: state.cleanliness < 50 || state.poopLevel > 65 ? "髒" : "乾淨", state: state.cleanliness < 50 || state.poopLevel > 65 ? "problem" : "good" },
-    { icon: state.boredom > 60 ? "🧶" : "🎾", label: state.boredom > 60 ? "悶" : "有玩", state: state.boredom > 60 ? "problem" : "good" },
-    { icon: state.healthRisk > 55 ? "🤒" : "🩺", label: state.healthRisk > 55 ? "病風險" : "健康", state: state.healthRisk > 55 ? "problem" : "good" },
-    { icon: state.sleepDebt > 55 ? "🌙" : "🛏", label: state.sleepDebt > 55 ? "夜跑" : "安睡", state: state.sleepDebt > 55 ? "problem" : "good" },
-    { icon: state.bonding > 70 ? "💚" : "🐾", label: state.bonding > 70 ? "親近" : "觀察", state: state.bonding > 70 ? "good" : "" },
-  ];
+  const chips = currentLang === "en"
+    ? [
+        { icon: state.hunger < 45 ? "🍚" : "🥣", label: state.hunger < 45 ? "Hungry" : "Fed", state: state.hunger < 45 ? "problem" : "good" },
+        { icon: state.cleanliness < 50 || state.poopLevel > 65 ? "💩" : "✨", label: state.cleanliness < 50 || state.poopLevel > 65 ? "Dirty" : "Clean", state: state.cleanliness < 50 || state.poopLevel > 65 ? "problem" : "good" },
+        { icon: state.boredom > 60 ? "🧶" : "🎾", label: state.boredom > 60 ? "Bored" : "Played", state: state.boredom > 60 ? "problem" : "good" },
+        { icon: state.healthRisk > 55 ? "🤒" : "🩺", label: state.healthRisk > 55 ? "Health risk" : "Stable", state: state.healthRisk > 55 ? "problem" : "good" },
+        { icon: state.sleepDebt > 55 ? "🌙" : "🛏", label: state.sleepDebt > 55 ? "Night run" : "Rested", state: state.sleepDebt > 55 ? "problem" : "good" },
+        { icon: state.bonding > 70 ? "💚" : "🐾", label: state.bonding > 70 ? "Bonded" : "Watching", state: state.bonding > 70 ? "good" : "" },
+      ]
+    : [
+        { icon: state.hunger < 45 ? "🍚" : "🥣", label: state.hunger < 45 ? "餓" : "飽", state: state.hunger < 45 ? "problem" : "good" },
+        { icon: state.cleanliness < 50 || state.poopLevel > 65 ? "💩" : "✨", label: state.cleanliness < 50 || state.poopLevel > 65 ? "髒" : "乾淨", state: state.cleanliness < 50 || state.poopLevel > 65 ? "problem" : "good" },
+        { icon: state.boredom > 60 ? "🧶" : "🎾", label: state.boredom > 60 ? "悶" : "有玩", state: state.boredom > 60 ? "problem" : "good" },
+        { icon: state.healthRisk > 55 ? "🤒" : "🩺", label: state.healthRisk > 55 ? "病風險" : "健康", state: state.healthRisk > 55 ? "problem" : "good" },
+        { icon: state.sleepDebt > 55 ? "🌙" : "🛏", label: state.sleepDebt > 55 ? "夜跑" : "安睡", state: state.sleepDebt > 55 ? "problem" : "good" },
+        { icon: state.bonding > 70 ? "💚" : "🐾", label: state.bonding > 70 ? "親近" : "觀察", state: state.bonding > 70 ? "good" : "" },
+      ];
   $("#visual-status").innerHTML = chips
     .map((chip) => `<div class="status-chip ${chip.state}"><strong>${chip.icon}</strong><span>${chip.label}</span></div>`)
     .join("");
@@ -2688,20 +3290,20 @@ function renderEvolutionGrid() {
       const meta = evolutionVisualMeta[key];
       return `<div class="evolution-cell ${key === current.key ? "current" : ""}">
         <span>${meta.icon}</span>
-        <strong>${meta.title}</strong>
-        <small>${meta.behavior}</small>
+        <strong>${evolutionText(key, "title")}</strong>
+        <small>${evolutionText(key, "behavior")}</small>
       </div>`;
     })
     .join("") + `
-      <div class="axis-label axis-y">Y 親密度 ${Math.round(state.bonding)}</div>
-      <div class="axis-label axis-x">X 活動量 ${Math.round(state.activity)}</div>
+      <div class="axis-label axis-y">Y ${currentLang === "en" ? "Bonding" : "親密度"} ${Math.round(state.bonding)}</div>
+      <div class="axis-label axis-x">X ${currentLang === "en" ? "Activity" : "活動量"} ${Math.round(state.activity)}</div>
       <div class="axis-scale y-high">100</div>
       <div class="axis-scale y-mid">50</div>
       <div class="axis-scale y-low">0</div>
       <div class="axis-scale x-low">0</div>
       <div class="axis-scale x-mid">50</div>
       <div class="axis-scale x-high">100</div>
-      <div class="evolution-point" style="--x:${clamp(state.activity)}%; --y:${clamp(state.bonding)}%" title="活動量 ${Math.round(state.activity)}，親密度 ${Math.round(state.bonding)}">
+      <div class="evolution-point" style="--x:${clamp(state.activity)}%; --y:${clamp(state.bonding)}%" title="${currentLang === "en" ? "Activity" : "活動量"} ${Math.round(state.activity)}，${currentLang === "en" ? "Bonding" : "親密度"} ${Math.round(state.bonding)}">
         <span>X${Math.round(state.activity)} / Y${Math.round(state.bonding)}</span>
       </div>
     `;
@@ -2715,7 +3317,9 @@ function renderEvolutionModal() {
   modal.setAttribute("aria-hidden", evolution ? "false" : "true");
   if (!evolution) return;
   $("#evolution-name").textContent = evolution.title;
-  $("#evolution-text").textContent = `${state.catName} 成為「${evolution.title}」。${evolution.detail} ${evolution.behavior}`;
+  $("#evolution-text").textContent = currentLang === "en"
+    ? `${state.catName} became "${evolutionText(evolution.key, "title")}". ${evolutionText(evolution.key, "detail")} ${evolutionText(evolution.key, "behavior")}`
+    : `${state.catName} 成為「${evolution.title}」。${evolution.detail} ${evolution.behavior}`;
   setCatImage("#evolution-cat-image", state.coat || "orange");
   const cat = $("#evolution-modal .cat");
   cat.className = `cat cat-coat-${state.coat || "orange"} idle ${evolution.className}`;
@@ -2737,10 +3341,12 @@ function renderOwnerEffort() {
   effortRanges.forEach((range) => {
     const item = document.createElement("div");
     item.className = `owner-effort-button ${active.id === range.id ? "selected" : ""}`;
-    item.innerHTML = `<strong>${range.label}</strong><span>${range.min}${Number.isFinite(range.max) ? `-${range.max}` : "+"} 精力</span>`;
+    item.innerHTML = `<strong>${effortText(range)}</strong><span>${range.min}${Number.isFinite(range.max) ? `-${range.max}` : "+"} ${currentLang === "en" ? "effort" : "精力"}</span>`;
     wrap.appendChild(item);
   });
-  $("#owner-effort-note").textContent = `目前今年累積精力 ${total}，系統判斷為「${active.label}」。${active.detail}`;
+  $("#owner-effort-note").textContent = currentLang === "en"
+    ? `Current yearly effort ${total}. The system reads this as "${effortText(active)}". ${effortText(active, "detail")}`
+    : `目前今年累積精力 ${total}，系統判斷為「${active.label}」。${active.detail}`;
 }
 
 function renderHistory() {
@@ -2751,10 +3357,16 @@ function renderHistory() {
     .sort(([, a], [, b]) => b.severity - a.severity)
     .slice(0, 3);
   const items = [
-    `<li><strong>成長傾向：${evolution.title}</strong><span>${evolution.detail}</span></li>`,
-    `<li><strong>埋雷：${buriedTotal}</strong><span>年度回顧中反覆未改善的問題，會提高日後大病、事故或死亡風險。</span></li>`,
+    currentLang === "en"
+      ? `<li><strong>Growth tendency: ${evolutionText(evolution.key, "title")}</strong><span>${evolutionText(evolution.key, "detail")}</span></li>`
+      : `<li><strong>成長傾向：${evolution.title}</strong><span>${evolution.detail}</span></li>`,
+    currentLang === "en"
+      ? `<li><strong>Buried risks: ${buriedTotal}</strong><span>Repeated unresolved issues from annual reviews raise future illness, accident, or death risk.</span></li>`
+      : `<li><strong>埋雷：${buriedTotal}</strong><span>年度回顧中反覆未改善的問題，會提高日後大病、事故或死亡風險。</span></li>`,
   ];
-  if (latestReview) items.push(`<li><strong>最近回顧：第${latestReview.year}年</strong><span>${latestReview.issues.length ? `${latestReview.issues.length} 類問題被記錄` : "照顧穩定，沒有新增重大錯誤"}</span></li>`);
+  if (latestReview) items.push(currentLang === "en"
+    ? `<li><strong>Latest review: Year ${latestReview.year}</strong><span>${latestReview.issues.length ? `${latestReview.issues.length} issue types recorded` : "Care was stable with no major new mistakes"}</span></li>`
+    : `<li><strong>最近回顧：第${latestReview.year}年</strong><span>${latestReview.issues.length ? `${latestReview.issues.length} 類問題被記錄` : "照顧穩定，沒有新增重大錯誤"}</span></li>`);
   topMistakes.forEach(([key, record]) => {
     items.push(`<li><strong>${mistakeText[key] || key}</strong><span>累積 ${record.count} 次，嚴重度 ${record.severity}</span></li>`);
   });
@@ -2788,6 +3400,8 @@ function updateCatVisual() {
   cat.classList.toggle("cat-alert", Boolean(state.currentEvent));
   $("#cat-mark").textContent = painfulEvent ? "痛" : dangerEvent ? "!" : state.currentEvent ? "!" : state.healthRisk > 75 ? "!" : state.stress > 70 ? "…" : "";
   $("#cat-persona-mark").textContent = adultShape ? evolution.mark : "";
+  $("#cat-mark").title = $("#cat-mark").textContent ? "點擊查看警示意思" : "";
+  $("#cat-persona-mark").title = adultShape ? "點擊查看性格標記意思" : "";
   $("#room-window").classList.toggle("safe", state.flags.windowNet);
   $("#room-sofa").classList.toggle("scratched", !state.flags.scratchPost && state.boredom > 55);
   $("#room-cat-tree").classList.toggle("hidden", !hasValidDurable("catTree"));
@@ -2812,14 +3426,18 @@ function render() {
   const ageYears = Math.floor((state.month - 1) / 12);
   const ageMonth = (state.month - 1) % 12;
   const currentYear = playYearIndex();
-  $("#day-title").textContent = `第 ${currentYear}/${playableYears()} 年 · ${ageYears}歲${ageMonth}個月`;
+  $("#day-title").textContent = currentLang === "en"
+    ? `Year ${currentYear}/${playableYears()} · ${ageYears}y ${ageMonth}m`
+    : `第 ${currentYear}/${playableYears()} 年 · ${ageYears}歲${ageMonth}個月`;
   $("#fund-left").textContent = money.format(Math.max(0, state.fund));
-  $("#spent-total").textContent = `累積支出 ${money.format(state.spent)}`;
-  $("#year-spent-total").textContent = `今年支出 ${money.format(state.expenses?.year || 0)}`;
+  $("#spent-total").textContent = `${copy("spentTotal")} ${money.format(state.spent)}`;
+  $("#year-spent-total").textContent = `${copy("yearSpent")} ${money.format(state.expenses?.year || 0)}`;
   const lastBill = state.expenses?.lastBill;
   $("#last-bill").textContent = lastBill
-    ? `最近帳單：${lastBill.reason} ${money.format(lastBill.amount)}。${lastBill.medical ? "醫療會突然吃掉現金。" : "這是日常責任的一部分。"}`
-    : "還沒有帳單";
+    ? currentLang === "en"
+      ? `Latest bill: ${money.format(lastBill.amount)}. ${lastBill.medical ? "Medical costs can hit suddenly." : "This is part of daily responsibility."}`
+      : `最近帳單：${lastBill.reason} ${money.format(lastBill.amount)}。${lastBill.medical ? "醫療會突然吃掉現金。" : "這是日常責任的一部分。"}`
+    : copy("noBill");
   $("#fund-meter").style.width = `${clamp((state.fund / state.initialFund) * 100)}%`;
   $("#stat-hunger").textContent = Math.round(state.hunger);
   $("#stat-happiness").textContent = Math.round(state.happiness);
@@ -2840,12 +3458,15 @@ function render() {
   $("#stat-time").textContent = `${Math.round(state.timeSpent || 0)}h`;
   $("#stat-energy").textContent = Math.round(state.effortSpent || 0);
   const preview = currentPlanPreview();
-  $("#stat-time-preview").textContent = preview ? `選擇後 ${Math.round((state.timeSpent || 0) + preview.time)}h` : "";
-  $("#stat-energy-preview").textContent = preview ? `選擇後 ${Math.round((state.effortSpent || 0) + preview.energy)}` : "";
+  $("#stat-time-preview").textContent = preview ? `${currentLang === "en" ? "After choice" : "選擇後"} ${Math.round((state.timeSpent || 0) + preview.time)}h` : "";
+  $("#stat-energy-preview").textContent = preview ? `${currentLang === "en" ? "After choice" : "選擇後"} ${Math.round((state.effortSpent || 0) + preview.energy)}` : "";
   const lifeProgress = ((state.month - state.startAgeMonths - 1) / playableMonths()) * 100;
   $("#progress-percent").textContent = `${Math.round(lifeProgress)}%`;
   $("#year-meter").style.width = `${clamp(lifeProgress)}%`;
-  $("#stage-label").textContent = `${stage().name}：${stage().label} 性格：${personalityVisible() ? profile().trait : "幼貓性格未明，照顧一段時間後才會顯現。"}`;
+  const st = stage();
+  $("#stage-label").textContent = currentLang === "en"
+    ? `${stageText(st)}: ${stageText(st, "label")} Personality: ${personalityVisible() ? profileText("trait") : "unknown in kitten stage; it emerges through care."}`
+    : `${st.name}：${st.label} 性格：${personalityVisible() ? profile().trait : "幼貓性格未明，照顧一段時間後才會顯現。"}`;
   $("#log-list").innerHTML = state.logs.map((item) => `<li>${item}</li>`).join("");
   renderScene();
   renderShop();
@@ -2866,15 +3487,17 @@ function render() {
 
 function finishGame() {
   const projected = Math.round(clamp(state.spent + state.healthRisk * 1200 + state.accidentRisk * 900, 250000, 900000));
-  const ageText = `${Math.floor((state.month - 1) / 12)}歲${(state.month - 1) % 12}個月`;
+  const ageYears = Math.floor((state.month - 1) / 12);
+  const ageMonths = (state.month - 1) % 12;
+  const ageText = currentLang === "en" ? `${ageYears}y ${ageMonths}m` : `${ageYears}歲${ageMonths}個月`;
   const evolution = evolutionResult();
   const buriedTotal = Object.values(state.buriedRisks || {}).reduce((sum, value) => sum + value, 0);
-  $(".summary-panel h2").textContent = state.death ? "牠已經離開。" : "走完一生。";
+  $(".summary-panel h2").textContent = state.death ? currentLang === "en" ? "The cat has passed away." : "牠已經離開。" : copy("summaryDone");
   $("#summary-line").textContent = state.death
-    ? `${state.catName} 在 ${ageText} 時離開。${state.death.reason}`
+    ? currentLang === "en" ? `${state.catName} passed away at ${ageText}. ${deathReasonText(state.death.reason)}` : `${state.catName} 在 ${ageText} 時離開。${state.death.reason}`
     : state.month > lifeEndMonth()
-      ? `${state.catName} 陪你走完了年度壓縮的一生。這不是評分，只是一份責任紀錄。`
-      : `${state.catName} 目前走到 ${ageText}。這是目前紀錄與一生推算。`;
+      ? currentLang === "en" ? `${state.catName} completed a compressed life with you. This is not a score; it is a responsibility record.` : `${state.catName} 陪你走完了年度壓縮的一生。這不是評分，只是一份責任紀錄。`
+      : currentLang === "en" ? `${state.catName} has reached ${ageText}. This is the current record and lifetime projection.` : `${state.catName} 目前走到 ${ageText}。這是目前紀錄與一生推算。`;
   $("#summary-spent").textContent = money.format(state.spent);
   $("#summary-fifteen").textContent = money.format(projected);
   $("#summary-play").textContent = state.playCount;
@@ -2884,15 +3507,19 @@ function finishGame() {
   $("#summary-biggest-bill").textContent = money.format(state.expenses?.biggestBill?.amount || 0);
   $("#summary-preventable").textContent = money.format(state.expenses?.preventable || 0);
   $("#summary-decisions").textContent = state.majorDecisions;
-  $("#summary-evolution").textContent = evolution.title;
+  $("#summary-evolution").textContent = currentLang === "en" ? evolutionText(evolution.key, "title") : evolution.title;
   $("#summary-buried").textContent = buriedTotal;
   $("#summary-reviews").textContent = state.annualReviews.length;
   $("#summary-review-list").innerHTML = state.annualReviews.length
     ? state.annualReviews
         .slice(-6)
-        .map((review) => `<li><strong>第${review.year}年：${review.issues.length ? `${review.issues.length}類問題` : "穩定"}</strong><span>${review.evolution.title}傾向；埋雷總數 ${review.buriedTotal}</span></li>`)
+        .map((review) => currentLang === "en"
+          ? `<li><strong>Year ${review.year}: ${review.issues.length ? `${review.issues.length} issue types` : "stable"}</strong><span>${evolutionText(review.evolution.key, "title")} tendency; buried risks ${review.buriedTotal}</span></li>`
+          : `<li><strong>第${review.year}年：${review.issues.length ? `${review.issues.length}類問題` : "穩定"}</strong><span>${review.evolution.title}傾向；埋雷總數 ${review.buriedTotal}</span></li>`)
         .join("")
-    : "<li><strong>還沒有年度回顧</strong><span>遊戲未走到12個月，暫無年度紀錄。</span></li>";
+    : currentLang === "en"
+      ? "<li><strong>No annual review yet</strong><span>The game has not reached 12 months, so there is no yearly record.</span></li>"
+      : "<li><strong>還沒有年度回顧</strong><span>遊戲未走到12個月，暫無年度紀錄。</span></li>";
   $("#reflection-result").textContent = "";
   setScreen("#summary-screen");
 }
@@ -2904,8 +3531,10 @@ function saveGame() {
 function startGame() {
   state = newState();
   const remaining = lifeEndMonth() - state.startAgeMonths;
-  state.logs = [`年度壓縮貓生開始：從${state.startAgeMonths}個月開始，剩約${Math.ceil(remaining / 12)}年；一次可以走完整個流程，每次點擊就是一年。`];
-  if (!state.personalityKnown) addLog("幼貓性格未知，會在照顧中慢慢顯現。");
+  state.logs = [currentLang === "en"
+    ? `Compressed cat life starts at ${state.startAgeMonths} months old, with about ${Math.ceil(remaining / 12)} years left. Each click is one year.`
+    : `年度壓縮貓生開始：從${state.startAgeMonths}個月開始，剩約${Math.ceil(remaining / 12)}年；一次可以走完整個流程，每次點擊就是一年。`];
+  if (!state.personalityKnown) addLog(currentLang === "en" ? "Kitten personality is unknown and will emerge through care." : "幼貓性格未知，會在照顧中慢慢顯現。");
   $("#cat-line").textContent = pick("idle");
   setScreen("#game-screen");
   queueBlockingEvent();
@@ -2913,9 +3542,24 @@ function startGame() {
   render();
 }
 
+function resetSetupForm() {
+  $("#start-age-input").value = "0";
+  $("#cat-sex-input").value = "female";
+  $("#cat-coat-input").value = "orange";
+  $("#fund-input").value = "250000";
+  $("#cat-name-input").value = "阿按揭";
+  selectedPersonality = "worker";
+  $$(".personality-card").forEach((card) => {
+    card.classList.toggle("selected", card.dataset.personality === selectedPersonality);
+  });
+  syncStartAgeUi();
+  updateStartCatImage();
+}
+
 function resetGame() {
   localStorage.removeItem(SAVE_KEY);
   state = null;
+  resetSetupForm();
   setScreen("#start-screen");
 }
 
@@ -2948,15 +3592,25 @@ function syncStartAgeUi() {
   const startAge = Number($("#start-age-input")?.value || 0);
   const kitten = startAge === 0;
   $(".personality-grid").classList.toggle("disabled", kitten);
-  $("#personality-help").textContent = kitten
-    ? "幼貓性格未知，所以不能預先選性格；牠會在照顧中慢慢顯現。"
-    : startAge >= 48
-      ? "3歲以上成貓性格已經明顯，你可以先選性格；這次模擬只剩10年壽命。"
-      : "1歲貓已經有較明顯性格，你可以先選牠的語氣與照顧傾向，走到15歲。";
+  $("#personality-help").textContent = currentLang === "en"
+    ? kitten
+      ? "A kitten's personality is unknown. It will emerge through care."
+      : startAge >= 36
+        ? "A 3+ year adult cat already has a clearer personality. This simulation has 10 years remaining."
+        : "A 1-year-old cat has a more visible personality and can be simulated until age 15."
+    : kitten
+      ? "幼貓性格未知，所以不能預先選性格；牠會在照顧中慢慢顯現。"
+      : startAge >= 36
+        ? "3歲以上成貓性格已經明顯，你可以先選性格；這次模擬只剩10年壽命。"
+        : "1歲貓已經有較明顯性格，你可以先選牠的語氣與照顧傾向，走到15歲。";
 }
 
 $("#start-age-input")?.addEventListener("change", syncStartAgeUi);
 $("#cat-coat-input")?.addEventListener("change", updateStartCatImage);
+$("#language-input")?.addEventListener("change", (event) => setLanguage(event.target.value));
+$("#language-input-game")?.addEventListener("change", (event) => setLanguage(event.target.value));
+$("#language-input-summary")?.addEventListener("change", (event) => setLanguage(event.target.value));
+applyLanguage();
 syncStartAgeUi();
 updateStartCatImage();
 
@@ -2981,6 +3635,8 @@ $$(".pet-menu [data-action]").forEach((button) => {
   button.addEventListener("click", () => applyAction(button.dataset.action));
 });
 
+$("#cat-mark")?.addEventListener("click", () => explainCatMark("warning"));
+$("#cat-persona-mark")?.addEventListener("click", () => explainCatMark("persona"));
 $("#evolution-close")?.addEventListener("click", closeEvolutionModal);
 $("#evolution-modal")?.addEventListener("click", (event) => {
   if (event.target?.id === "evolution-modal") closeEvolutionModal();
