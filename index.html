@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>養之前：15年養貓責任模擬</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=20260505-summary-scroll" />
   </head>
   <body>
     <main class="app-shell">
@@ -121,6 +121,28 @@
           </div>
         </header>
 
+        <div class="money-card fund-overview">
+          <div class="fund-overview-head">
+            <span>剩餘基金</span>
+            <strong id="fund-left">$250,000</strong>
+          </div>
+          <div class="combined-progress" aria-label="貓生進度與花費對照">
+            <div class="combined-progress-head">
+              <span id="fund-progress-label">剩餘基金</span>
+              <span id="life-progress-label">貓生 0/15 年</span>
+            </div>
+            <div class="life-money-meter">
+              <span id="fund-remaining-meter"></span>
+              <span id="life-meter"></span>
+            </div>
+          </div>
+          <div class="fund-overview-details">
+            <small id="spent-total">累積支出 $0</small>
+            <small id="year-spent-total">今年支出 $0</small>
+            <small id="last-bill">還沒有帳單</small>
+          </div>
+        </div>
+
         <section class="dashboard">
           <article class="main-stage">
             <nav class="scene-nav" aria-label="場景切換">
@@ -137,29 +159,37 @@
               <div id="event-banner" class="event-banner hidden"></div>
               <div id="scene-label" class="scene-label">客廳</div>
               <div class="room-hud" aria-hidden="true">
-                <span>🍚 <strong id="hud-hunger">80</strong></span>
-                <span>💧 <strong id="hud-hydration">80</strong></span>
-                <span>💚 <strong id="hud-bonding">30</strong></span>
-                <span>⚠ <strong id="hud-risk">0</strong></span>
+                <span>🍚 <em>飽肚</em><strong id="hud-hunger">80</strong></span>
+                <span>💧 <em>水分</em><strong id="hud-hydration">80</strong></span>
+                <span>💚 <em>親密</em><strong id="hud-bonding">30</strong></span>
+                <span>⚠ <em>風險</em><strong id="hud-risk">0</strong></span>
               </div>
-              <div id="room-window" class="room-window room-hotspot" data-room-action="lifestyle" role="button" tabindex="0" aria-label="窗戶安全：外出/旅行安排"><span></span></div>
+              <div id="room-window" class="room-window room-hotspot" data-room-action="lifestyle" role="button" tabindex="0" aria-label="窗戶安全：外出/旅行安排"><span class="window-net"></span><span class="hotspot-label">窗戶安全</span></div>
               <div id="room-sofa" class="room-sofa"></div>
-              <button id="room-food-bowl" class="room-food-bowl room-hotspot" data-room-action="nutrition" type="button" aria-label="食碗：餵食"></button>
-              <div id="room-cat-tree" class="room-cat-tree room-hotspot hidden" data-room-action="enrichment" role="button" tabindex="0" aria-label="貓爬架：陪玩訓練"></div>
-              <div id="room-cat-bed" class="room-cat-bed room-hotspot hidden" data-room-action="sleep" role="button" tabindex="0" aria-label="貓窩：夜間作息"></div>
-              <div id="room-scratcher" class="room-scratcher room-hotspot hidden" data-room-action="training" role="button" tabindex="0" aria-label="抓板：行為引導"></div>
-              <div id="room-litter" class="room-litter room-hotspot hidden" data-room-action="hygiene" role="button" tabindex="0" aria-label="貓砂盆：清潔整理"></div>
+              <button id="room-food-bowl" class="room-food-bowl room-hotspot" data-room-action="nutrition" type="button" aria-label="食碗：餵食"><span class="hotspot-label">食碗</span></button>
+              <div id="room-cat-tree" class="room-cat-tree room-hotspot hidden" data-room-action="enrichment" role="button" tabindex="0" aria-label="貓爬架：陪玩訓練"><span class="hotspot-label">貓爬架</span></div>
+              <div id="room-cat-bed" class="room-cat-bed room-hotspot hidden" data-room-action="sleep" role="button" tabindex="0" aria-label="貓窩：夜間作息"><span class="hotspot-label">貓窩</span></div>
+              <div id="room-scratcher" class="room-scratcher room-hotspot hidden" data-room-action="training" role="button" tabindex="0" aria-label="抓板：行為引導"><span class="hotspot-label">抓板</span></div>
+              <div id="room-litter" class="room-litter room-hotspot hidden" data-room-action="hygiene" role="button" tabindex="0" aria-label="貓砂盆：清潔整理"><span class="hotspot-label">貓砂盆</span></div>
               <div id="room-light" class="room-light"></div>
-              <div id="room-toy" class="room-toy room-hotspot" data-room-action="enrichment" role="button" tabindex="0" aria-label="玩具：陪玩訓練"></div>
-              <div id="cat" class="cat cat-orange cat-coat-orange idle" aria-label="電子貓">
+              <div id="room-toy" class="room-toy room-hotspot" data-room-action="enrichment" role="button" tabindex="0" aria-label="玩具：陪玩訓練"><span class="hotspot-label">玩具</span></div>
+              <div id="room-supplies" class="room-supplies room-hotspot" data-room-action="supplies" role="button" tabindex="0" aria-label="補給箱：用品補給"><span class="hotspot-label">補給箱</span></div>
+              <div id="cat" class="cat cat-orange cat-coat-orange idle" role="button" tabindex="0" aria-label="點擊貓咪互動">
                 <img id="cat-image" class="cat-image" alt="電子貓" />
                 <button id="cat-mark" class="cat-mark" type="button" aria-label="查看貓咪警示說明"></button>
                 <button id="cat-persona-mark" class="cat-persona-mark" type="button" aria-label="查看貓咪性格標記說明"></button>
               </div>
+              <div class="speech-wrap">
+                <p id="cat-line" class="speech">你而家覺得我可愛，因為你未見過我凌晨三點跑酷。</p>
+                <span id="cat-talk-hint" class="cat-talk-hint">點貓咪聽牠說話</span>
+              </div>
+              <div id="room-action-guide" class="room-action-guide hidden">
+                <strong></strong>
+                <span></span>
+                <div class="room-action-meter" aria-hidden="true"><i></i></div>
+              </div>
               <div class="floor-shadow"></div>
             </div>
-
-            <div id="visual-status" class="visual-status" aria-label="貓咪狀態"></div>
 
             <div class="pet-menu" aria-label="短菜單">
               <button type="button" data-action="nutrition"><span>🍽</span><strong>餵食</strong></button>
@@ -170,7 +200,7 @@
               <button type="button" data-action="lifestyle"><span>🧳</span><strong>外出</strong></button>
             </div>
 
-            <div id="year-brief" class="year-brief"></div>
+            <details id="year-brief" class="year-brief"></details>
 
             <div class="daily-needs care-dock">
               <div>
@@ -180,11 +210,8 @@
               <ul id="need-list"></ul>
             </div>
 
-            <div class="speech-wrap">
-              <p id="cat-line" class="speech">你而家覺得我可愛，因為你未見過我凌晨三點跑酷。</p>
-            </div>
-
             <div id="choice-panel" class="choice-panel hidden">
+              <button id="choice-close" class="choice-close" type="button" aria-label="關閉彈窗">×</button>
               <p class="eyebrow">突發情況</p>
               <h3 id="choice-title"></h3>
               <p id="choice-text"></p>
@@ -203,17 +230,6 @@
           </article>
 
           <aside class="side-panel">
-            <div class="money-card">
-              <span>剩餘基金</span>
-              <strong id="fund-left">$250,000</strong>
-              <div class="meter money">
-                <span id="fund-meter"></span>
-              </div>
-              <small id="spent-total">累積支出 $0</small>
-              <small id="year-spent-total">今年支出 $0</small>
-              <small id="last-bill">還沒有帳單</small>
-            </div>
-
             <div class="stats-grid">
               <div>
                 <span>飽肚</span>
@@ -327,6 +343,10 @@
 
       <section id="summary-screen" class="screen">
         <div class="summary-panel">
+          <div class="summary-exit-bar">
+            <button id="summary-restart-top" class="ghost-button" type="button">重新開始</button>
+            <button id="summary-top-button" class="ghost-button" type="button">回到頁頂</button>
+          </div>
           <select id="language-input-summary" class="language-select summary-language" aria-label="語言">
             <option value="zh">中文</option>
             <option value="en">English</option>
@@ -430,6 +450,6 @@
       </section>
     </main>
 
-    <script src="game.js"></script>
+    <script src="game.js?v=20260505-summary-scroll"></script>
   </body>
 </html>

@@ -29,6 +29,19 @@ function playYearIndex() {
   return Math.min(playableYears(), Math.max(1, Math.floor((state.month - state.startAgeMonths - 1) / 12) + 1));
 }
 
+function lifeYearsElapsed() {
+  return clamp((state?.month || 1) - 1, 0, TOTAL_MONTHS) / 12;
+}
+
+function totalLifeProgressPercent() {
+  return clamp((lifeYearsElapsed() / (TOTAL_MONTHS / 12)) * 100);
+}
+
+function fundSpentPercent() {
+  if (!state?.initialFund) return 0;
+  return clamp((state.spent / state.initialFund) * 100);
+}
+
 function playDayTotal() {
   return 1;
 }
@@ -40,6 +53,12 @@ const money = new Intl.NumberFormat("en-HK", {
 });
 
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, value));
+const escapeHtml = (value = "") => String(value)
+  .replaceAll("&", "&amp;")
+  .replaceAll("<", "&lt;")
+  .replaceAll(">", "&gt;")
+  .replaceAll('"', "&quot;")
+  .replaceAll("'", "&#39;");
 let currentLang = localStorage.getItem(LANG_KEY) || "zh";
 
 const uiCopy = {
@@ -78,6 +97,9 @@ const uiCopy = {
     effortTitle: "投入程度判斷",
     lifeProgress: "貓生進度",
     evolutionTable: "3×3 Adult 進化表",
+    tapCat: "點貓咪聽牠說話",
+    yearBriefTitle: "今年可能發生",
+    yearBriefMore: "點開看責任提醒",
     summaryEyebrow: "貓生模擬完成",
     summaryDone: "走完一生。",
     summaryLabels: ["總支出", "推算一生", "陪伴次數", "忽略天數", "醫療事件", "醫療總支出", "最大單次帳單", "拖延代價", "重大選擇", "最終成長", "埋雷總數", "年度回顧"],
@@ -125,6 +147,9 @@ const uiCopy = {
     effortTitle: "Care workload",
     lifeProgress: "Life progress",
     evolutionTable: "3×3 Adult evolution map",
+    tapCat: "Tap the cat to hear it",
+    yearBriefTitle: "This year may bring",
+    yearBriefMore: "Open for care reminders",
     summaryEyebrow: "Cat life simulation complete",
     summaryDone: "Life completed.",
     summaryLabels: ["Total spent", "Projected lifetime", "Play sessions", "Neglect days", "Medical events", "Medical spending", "Largest bill", "Cost of delay", "Major choices", "Final growth", "Buried risks", "Annual reviews"],
@@ -200,6 +225,7 @@ const shopCopyEn = {
   dryFood: ["Dry food bag", "Affordable and stable, but moisture must be managed."],
   wetFood: ["Wet food case", "Better hydration, useful for low appetite or senior cats."],
   freezeDry: ["Freeze-dried treats", "High happiness, but too much can cause weight gain."],
+  freshFood: ["Fresh food prep pack", "More time and effort, but better hydration and bonding."],
   treats: ["Treat sticks", "Good for reward or comfort, not a meal replacement."],
   litter: ["Cat litter bag", "A consumable that hygiene care uses up."],
   litterBox: ["Litter box", "A basic living item, not a decoration."],
@@ -393,6 +419,16 @@ function setLabelText(inputSelector, text) {
   if (label?.childNodes?.[0]) label.childNodes[0].textContent = text;
 }
 
+function setText(selector, text) {
+  const node = $(selector);
+  if (node) node.textContent = text;
+}
+
+function setValue(selector, value) {
+  const node = $(selector);
+  if (node) node.value = value;
+}
+
 function setOptions(selectSelector, options) {
   const select = $(selectSelector);
   if (!select) return;
@@ -405,16 +441,16 @@ function setOptions(selectSelector, options) {
 function applyLanguage() {
   document.documentElement.lang = currentLang === "en" ? "en" : "zh-Hant";
   document.title = copy("docTitle");
-  $("#language-input").value = currentLang;
-  $("#language-input-game").value = currentLang;
-  $("#language-input-summary").value = currentLang;
+  setValue("#language-input", currentLang);
+  setValue("#language-input-game", currentLang);
+  setValue("#language-input-summary", currentLang);
   const languageSwitch = $(".language-switch");
   if (languageSwitch?.childNodes?.[0]) languageSwitch.childNodes[0].textContent = copy("langLabel");
-  $(".hero-copy .eyebrow").textContent = copy("heroEyebrow");
-  $(".hero-copy h1").textContent = copy("heroTitle");
-  $(".hero-copy .lead").textContent = copy("heroLead");
-  $(".setup-panel h2").textContent = copy("setupTitle");
-  $(".setup-note").textContent = copy("setupNote");
+  setText(".hero-copy .eyebrow", copy("heroEyebrow"));
+  setText(".hero-copy h1", copy("heroTitle"));
+  setText(".hero-copy .lead", copy("heroLead"));
+  setText(".setup-panel h2", copy("setupTitle"));
+  setText(".setup-note", copy("setupNote"));
   setLabelText("#start-age-input", copy("startAge"));
   setLabelText("#cat-sex-input", copy("sex"));
   setLabelText("#cat-coat-input", copy("coat"));
@@ -447,12 +483,12 @@ function applyLanguage() {
       card.querySelector("span").textContent = item[1];
     }
   });
-  $("#start-button").textContent = copy("startButton");
-  $(".topbar .eyebrow").textContent = copy("perTurn");
-  $("#fast-forward-button").textContent = copy("progressButton");
-  $("#summary-button").textContent = copy("summaryButton");
-  $("#reset-button").textContent = copy("resetButton");
-  $("#next-day-button").textContent = copy("nextYear");
+  setText("#start-button", copy("startButton"));
+  setText(".topbar .eyebrow", copy("perTurn"));
+  setText("#fast-forward-button", copy("progressButton"));
+  setText("#summary-button", copy("summaryButton"));
+  setText("#reset-button", copy("resetButton"));
+  setText("#next-day-button", copy("nextYear"));
   $$(".scene-button").forEach((button) => {
     button.textContent = sceneTitle(button.dataset.scene);
   });
@@ -460,7 +496,7 @@ function applyLanguage() {
     button.querySelector("strong").textContent = actionTitle(button.dataset.action);
   });
   const moneyLabels = currentLang === "en" ? ["Remaining fund"] : [copy("fundLeft")];
-  $(".money-card > span").textContent = moneyLabels[0];
+  setText(".fund-overview-head > span", moneyLabels[0]);
   const statLabels = currentLang === "en"
     ? ["Hunger", "Mood", "Cleanliness", "Hydration", "Stress", "Bonding", "Activity", "Night disturbance", "Litter dirt", "Behavior stability", "Health risk", "Responsibility level", "Time used this year", "Effort spent"]
     : ["飽肚", "心情", "清潔", "水分", "壓力", "親密", "活動量", "夜間干擾", "砂盆髒污", "行為穩定", "健康風險", "責任等級", "今年已用時間", "已付出精力"];
@@ -469,31 +505,32 @@ function applyLanguage() {
     node.textContent = statLabels[index] || node.textContent;
     if (infoButton) node.appendChild(infoButton);
   });
-  $(".owner-effort-card h3").textContent = copy("effortTitle");
-  $(".timeline-head span").textContent = copy("lifeProgress");
+  setText(".owner-effort-card h3", copy("effortTitle"));
+  setText(".timeline-head span", copy("lifeProgress"));
   const summaries = $$(".side-panel summary");
   [copy("inventory"), copy("durability"), copy("achievements"), copy("history"), copy("log")].forEach((label, index) => {
     if (summaries[index]) summaries[index].textContent = label;
   });
-  $(".evolution-card summary").textContent = copy("evolutionTable");
-  $(".daily-needs > div > span").textContent = copy("annualNeeds");
-  $("#choice-panel .eyebrow").textContent = copy("sudden");
-  $("#shop-panel .eyebrow").textContent = copy("shop");
-  $("#shop-panel h3").textContent = copy("shopShelf");
-  $(".summary-panel > .eyebrow").textContent = copy("summaryEyebrow");
-  $(".summary-panel h2").textContent = copy("summaryDone");
+  setText(".evolution-card summary", copy("evolutionTable"));
+  setText(".daily-needs > div > span", copy("annualNeeds"));
+  setText("#cat-talk-hint", copy("tapCat"));
+  setText("#choice-panel .eyebrow", copy("sudden"));
+  setText("#shop-panel .eyebrow", copy("shop"));
+  setText("#shop-panel h3", copy("shopShelf"));
+  setText(".summary-panel > .eyebrow", copy("summaryEyebrow"));
+  setText(".summary-panel h2", copy("summaryDone"));
   $$(".summary-grid span").forEach((node, index) => {
     node.textContent = copy("summaryLabels")?.[index] || node.textContent;
   });
-  $(".reflection h3").textContent = copy("reviewRecord");
+  setText(".reflection h3", copy("reviewRecord"));
   const reflectionBlocks = $$(".summary-panel .reflection");
   if (reflectionBlocks[1]) reflectionBlocks[1].querySelector("h3").textContent = copy("finalQuestion");
-  $("#ready-button").textContent = copy("readyButton");
-  $("#not-ready-button").textContent = copy("notReadyButton");
-  $("#play-again-button").textContent = copy("playAgain");
-  $(".medeci-card .eyebrow").textContent = copy("medeciEyebrow");
-  $(".medeci-card p:not(.eyebrow)").textContent = copy("medeciText");
-  $(".medeci-link").textContent = copy("medeciLink");
+  setText("#ready-button", copy("readyButton"));
+  setText("#not-ready-button", copy("notReadyButton"));
+  setText("#play-again-button", copy("playAgain"));
+  setText(".medeci-card .eyebrow", copy("medeciEyebrow"));
+  setText(".medeci-card p:not(.eyebrow)", copy("medeciText"));
+  setText(".medeci-link", copy("medeciLink"));
   syncStartAgeUi();
 }
 
@@ -662,9 +699,10 @@ const durableItemRules = {
 };
 
 const shopCatalog = [
-  { id: "dryFood", category: "食物", label: "貓糧一包", price: 350, time: 1, energy: 2, add: { dryFood: 8 }, detail: "文件寫 $200-500；便宜穩定，但水分不足。" },
-  { id: "wetFood", category: "食物", label: "濕糧一箱", price: 520, time: 1, energy: 3, add: { wetFood: 6 }, detail: "水分更好，適合食慾差或老年期。" },
-  { id: "freezeDry", category: "食物", label: "凍乾零食", price: 680, time: 1, energy: 3, add: { freezeDry: 6 }, detail: "快樂值高，但吃太多會肥。" },
+  { id: "dryFood", category: "食物", label: "貓糧一包", price: 350, time: 1, energy: 2, add: { dryFood: 1 }, detail: "約一個月主食量；便宜穩定，但水分不足。" },
+  { id: "wetFood", category: "食物", label: "濕糧一箱", price: 520, time: 1, energy: 3, add: { wetFood: 1 }, detail: "約一個月混合餵養量，水分更好。" },
+  { id: "freezeDry", category: "食物", label: "凍乾零食", price: 680, time: 1, energy: 3, add: { freezeDry: 1 }, detail: "約一個月加餐量；快樂值高，但吃太多會肥。" },
+  { id: "freshFood", category: "食物", label: "鮮食材料包", price: 520, time: 2, energy: 8, add: { freshFood: 1 }, detail: "約一個月鮮食材料；水分更好，也更花時間。" },
   { id: "treats", category: "食物", label: "肉條零食", price: 180, time: 1, energy: 2, add: { treats: 8 }, detail: "用來安撫或獎勵，不應取代正餐。" },
   { id: "litter", category: "用品", label: "貓砂一包", price: 160, time: 1, energy: 2, add: { litter: 1 }, detail: "文件寫 $80-200；清潔照顧會消耗。" },
   { id: "litterBox", category: "用品", label: "貓砂盆", price: 280, time: 1, energy: 3, add: { litterBox: 1 }, detail: "文件寫 $150-400；基本用品，不是裝飾。" },
@@ -712,10 +750,10 @@ const intensityMeta = {
 
 const actionChoices = {
   nutrition: [
-    { label: "買乾糧大包，全年餵乾糧", detail: "穩定、便宜，但水分不足要靠換水補足。", money: 380, time: 1, energy: 3, add: { dryFood: 10 }, use: { dryFood: 1 }, hunger: 18, hydration: -2, weight: 1, line: "乾糧解決了肚餓，但飲水仍然要看。" },
-    { label: "買濕糧，全年混合餵養", detail: "可和乾糧、鮮食一起多選；水分更好，但花費和整理時間更高。", money: 520, time: 2, energy: 6, add: { wetFood: 6 }, use: { wetFood: 1 }, hunger: 14, hydration: 12, happiness: 4, line: "混合餵養比較貼近現實，也更花時間和錢。" },
-    { label: "買凍乾，全年加餐", detail: "貓通常很喜歡，開心度高，但不能當主食亂餵。", money: 680, time: 1, energy: 4, add: { freezeDry: 6 }, use: { freezeDry: 1 }, hunger: 12, happiness: 12, weight: 2, line: "牠很開心，但你也看到零食不是免費魔法。" },
-    { label: "準備鮮食", detail: "最花時間和精力，但水分、親密和健康回饋更好。", money: 520, time: 4, energy: 18, add: { freshFood: 3 }, use: { freshFood: 1 }, hunger: 16, hydration: 14, health: -6, bonding: 3, line: "你不是按一下餵食，你真的花了時間準備。" },
+    { label: "買乾糧大包，全年餵乾糧", detail: "穩定、便宜，但水分不足要靠換水補足。背包夠乾糧時不再收購買費。", inventoryFirst: "dryFood", time: 1, energy: 3, use: { dryFood: 1 }, hunger: 18, hydration: -2, weight: 1, line: "乾糧解決了肚餓，但飲水仍然要看。" },
+    { label: "買濕糧，全年混合餵養", detail: "可和乾糧、鮮食一起多選；水分更好，但花費和整理時間更高。背包夠濕糧時不再收購買費。", inventoryFirst: "wetFood", time: 2, energy: 6, use: { wetFood: 1 }, hunger: 14, hydration: 12, happiness: 4, line: "混合餵養比較貼近現實，也更花時間和錢。" },
+    { label: "買凍乾，全年加餐", detail: "貓通常很喜歡，開心度高，但不能當主食亂餵。背包夠凍乾時不再收購買費。", inventoryFirst: "freezeDry", time: 1, energy: 4, use: { freezeDry: 1 }, hunger: 12, happiness: 12, weight: 2, line: "牠很開心，但你也看到零食不是免費魔法。" },
+    { label: "準備鮮食", detail: "最花時間和精力，但水分、親密和健康回饋更好。背包夠鮮食材料時不再收購買費。", inventoryFirst: "freshFood", time: 4, energy: 18, use: { freshFood: 1 }, hunger: 16, hydration: 14, health: -6, bonding: 3, line: "你不是按一下餵食，你真的花了時間準備。" },
     { label: "用背包現有食物餵", detail: "消耗背包食物，不額外花錢，但如果背包空了會失敗。", money: 0, time: 1, energy: 4, consumeFood: true, hunger: 14, line: "你用掉了背包裡的一餐。" },
   ],
   supplies: [
@@ -1308,18 +1346,19 @@ function ensureStateShape() {
 
 function setScene(scene) {
   state.currentScene = scene;
-  state.currentAction = null;
-  $("#cat-line").textContent = currentLang === "en"
-    ? {
-        living: "Daily care hub: feeding, play, and status checks.",
-        balcony: "Window safety matters here. This scene affects fall risk.",
-        bedroom: "Sleep and bonding scene, useful for calming and rest.",
-        garden: "A controlled outdoor space at home: more activity, still your responsibility.",
-        shop: "Buy food, supplies, toys, decor, and medical preparation here.",
-        park: "Real outdoor stimulation: more exciting, but also more risk.",
-        friend: "A visit/social scene for future friend-home gameplay.",
-      }[scene] || pick("idle")
-    : sceneMeta[scene]?.line || pick("idle");
+  if (!state.currentAction) {
+    $("#cat-line").textContent = currentLang === "en"
+      ? {
+          living: "Daily care hub: feeding, play, and status checks.",
+          balcony: "Window safety matters here. This scene affects fall risk.",
+          bedroom: "Sleep and bonding scene, useful for calming and rest.",
+          garden: "A controlled outdoor space at home: more activity, still your responsibility.",
+          shop: "Buy food, supplies, toys, decor, and medical preparation here.",
+          park: "Real outdoor stimulation: more exciting, but also more risk.",
+          friend: "A visit/social scene for future friend-home gameplay.",
+        }[scene] || pick("idle")
+      : sceneMeta[scene]?.line || pick("idle");
+  }
   saveGame();
   render();
 }
@@ -1330,11 +1369,7 @@ function setScreen(id) {
 }
 
 function scrollChoicePanelIntoView() {
-  window.requestAnimationFrame(() => {
-    const panel = $("#choice-panel");
-    if (!panel || panel.classList.contains("hidden")) return;
-    panel.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
+  // The choice panel is a floating sheet; opening it should not move the page.
 }
 
 function miniProgress() {
@@ -1353,6 +1388,70 @@ function advanceMiniProgress(amount = 25) {
   setMiniProgress(miniProgress() + amount);
 }
 
+function actionRoomText(action) {
+  const text = currentLang === "en"
+    ? {
+        nutrition: ["Tap the bowl to feed", "The bowl will fill as you complete feeding."],
+        supplies: ["Tap the supply box to restock", "Buying is not enough; supplies must enter the home system."],
+        hygiene: ["Tap the litter box to clean", "The cat reacts to whether the litter area is actually handled."],
+        enrichment: ["Tap the toy or cat to play", "Play should be visible, not just a line of text."],
+        training: ["Tap the scratcher or cat to guide", "Reward the right behavior instead of guessing from numbers."],
+        sleep: ["Tap the bed or cat to settle the night", "You are shaping the night rhythm."],
+        vet: ["Tap the cat to bring it to care", "Medical care is a real action: carrier, clinic, checkup."],
+        lifestyle: ["Tap the window to handle safety", "Window safety and travel care must be arranged before accidents."],
+      }
+    : {
+        nutrition: ["點食碗完成餵食", "食碗會成為你真正完成動作的位置。"],
+        supplies: ["點補給箱完成補貨", "買了不等於照顧完成，用品要進入家裡的生活系統。"],
+        hygiene: ["點砂盆完成清潔", "牠不是看數字，是看砂盆有沒有真的被處理。"],
+        enrichment: ["點玩具或貓咪陪玩", "陪玩要看得到，不只是文字選項。"],
+        training: ["點抓板或貓咪引導", "用獎勵和轉移，不靠猜數字。"],
+        sleep: ["點貓窩或貓咪安定夜晚", "你是在整理夜間節奏。"],
+        vet: ["點貓咪帶去照護", "醫療是外出籠、診所和檢查，不是一句文字。"],
+        lifestyle: ["點窗戶處理安全", "窗網、旅行和上門照顧都要在事故前安排。"],
+      };
+  return text[action] || text.enrichment;
+}
+
+function targetMatchesAction(clickedAction) {
+  if (!state?.currentAction) return false;
+  if (clickedAction === state.currentAction) return true;
+  if (clickedAction === "cat") return ["enrichment", "training", "sleep", "vet"].includes(state.currentAction);
+  return false;
+}
+
+function handleRoomInteraction(clickedAction) {
+  if (!state) return;
+  if (!state.currentAction) {
+    if (clickedAction === "cat") {
+      talkToCat("tap");
+      return;
+    }
+    applyAction(clickedAction);
+    return;
+  }
+  if (!targetMatchesAction(clickedAction)) {
+    const [title] = actionRoomText(state.currentAction);
+    showBanner(currentLang === "en" ? `Finish the current action first: ${title}.` : `先完成現在這個動作：${title}`);
+    return;
+  }
+  if (!state.actionDraft?.selected?.length) {
+    showBanner(currentLang === "en" ? "Pick a care option below first, then complete it by tapping the glowing object in the room." : "先在下面選一個照顧方案，再點房間裡發光的物件完成。");
+    return;
+  }
+  const nextProgress = 100;
+  state.actionDraft.progress = nextProgress;
+  const [title] = actionRoomText(state.currentAction);
+  $("#cat-line").textContent = currentLang === "en" ? `${title}: ${nextProgress}%` : `${title}：${nextProgress}%`;
+  animateCat(state.currentAction === "vet" || state.currentAction === "lifestyle" ? "startled" : "playing");
+  if (nextProgress >= 100) {
+    confirmActionPlan();
+    return;
+  }
+  saveGame();
+  render();
+}
+
 function shortCareResult(action, effects) {
   const meta = miniMeta(action);
   const cost = [];
@@ -1360,6 +1459,37 @@ function shortCareResult(action, effects) {
   if (effects.time) cost.push(`${effects.time}h`);
   if (effects.energy) cost.push(energyText(effects.energy));
   return `${meta.done} ${cost.join(" · ")}`;
+}
+
+function catTalkLine() {
+  if (!state) return currentLang === "en" ? "Start caring for me first." : "先開始照顧我啦。";
+  if (state.currentEvent) {
+    return currentLang === "en"
+      ? `Something is happening: ${state.currentEvent.title}. Please look at me first.`
+      : `而家有事：${state.currentEvent.title}。你先望下我。`;
+  }
+  const lines = [];
+  if (state.healthRisk > 65) lines.push(currentLang === "en" ? "I don't feel well. Please don't just Google it." : "我唔舒服。唔好只係 Google 下就算。");
+  if (state.hunger < 48) lines.push(currentLang === "en" ? "My bowl is the first responsibility, not the last." : "食碗唔係裝飾，係第一個責任。");
+  if (state.hydration < 52) lines.push(currentLang === "en" ? "Water matters. Urinary bills are not cute." : "水好重要，泌尿帳單一啲都不可愛。");
+  if (state.cleanliness < 52 || state.poopLevel > 60) lines.push(currentLang === "en" ? "The litter area is telling the truth before I do." : "砂盆已經幫我講咗真話。");
+  if (state.boredom > 58) lines.push(currentLang === "en" ? "If you don't play with me, your sofa might." : "你唔陪我玩，沙發可能會陪我。");
+  if (state.stress > 62) lines.push(currentLang === "en" ? "I look naughty when I am actually stressed." : "我睇似曳，其實係壓力大。");
+  if (state.bonding > 72) lines.push(currentLang === "en" ? "I came closer because you kept showing up." : "我行近咗，因為你一直有出現。");
+  if (!hasValidDurable("windowNet")) lines.push(currentLang === "en" ? "The window is not a background. It is a risk." : "窗唔係背景，係風險。");
+  if (!state.completedActions.vet && state.month - (state.lastVetAt || 0) >= 12) lines.push(currentLang === "en" ? "A checkup is cheaper than pretending nothing is wrong." : "檢查通常平過扮冇事。");
+  if (!lines.length) lines.push(...(profile().lines[state.bonding > 55 ? "good" : "idle"] || profile().lines.idle));
+  return lines[Math.floor(Math.random() * lines.length)];
+}
+
+function talkToCat(reason = "tap") {
+  if (!state) return;
+  $("#cat-line").textContent = catTalkLine();
+  const wrap = $(".speech-wrap");
+  wrap?.classList.add("active");
+  animateCat(reason === "tap" ? "calm" : "playing");
+  window.clearTimeout(talkToCat.hideTimer);
+  talkToCat.hideTimer = window.setTimeout(() => wrap?.classList.remove("active"), 5200);
 }
 
 function currentNeeds() {
@@ -1670,6 +1800,7 @@ function buildActionPlan(action, selected, intensity) {
     installDurables: [],
     setFlags: [],
     autoPurchases: [],
+    inventoryCovered: [],
     billItems: [],
     habitGains: {},
     playCount: 0,
@@ -1704,7 +1835,19 @@ function buildActionPlan(action, selected, intensity) {
     if (!choice) continue;
     const repeat = annualRepeatForChoice(action, choice);
     if (repeat > 1) effects.annualized = true;
-    const choiceMoney = (choice.money || 0) * repeat;
+    if (choice.inventoryFirst) {
+      const key = choice.inventoryFirst;
+      const yearlyAmount = annualInventoryAmount(key, choice.use?.[key] || 1, repeat);
+      touchInventory(key);
+      const beforeAmount = tempInventory[key] || 0;
+      if (beforeAmount < yearlyAmount) {
+        const bought = buyMissingInventory(key, yearlyAmount);
+        if (!bought) return { error: currentLang === "en" ? `Cannot buy missing yearly amount: ${itemName(key)}.` : `無法補買一整年用量：${itemName(key)}。` };
+      } else {
+        effects.inventoryCovered.push(key);
+      }
+    }
+    const choiceMoney = choice.inventoryFirst ? 0 : (choice.money || 0) * repeat;
     effects.money += choiceMoney;
     if (choice.billItems?.length) {
       choice.billItems.forEach((item) => effects.billItems.push({ label: item.label, amount: item.amount * repeat }));
@@ -1921,10 +2064,6 @@ function confirmActionPlan() {
     showBanner("請至少選擇一個照顧項目。可以多選，例如乾糧 + 濕糧混合餵養。");
     return;
   }
-  if (miniProgress() < 100) {
-    showBanner("先完成上面的照顧動作，再確認。");
-    return;
-  }
   if (state.actionPlans[draft.action]) revertActionPlan(draft.action);
   draft.intensity = "normal";
   const built = buildActionPlan(draft.action, draft.selected, draft.intensity);
@@ -1938,6 +2077,7 @@ function confirmActionPlan() {
     return;
   }
   applyActionPlanEffects(draft.action, draft.selected, draft.intensity, effects);
+  const completedAction = draft.action;
   state.actionPlans[draft.action] = {
     selected: [...draft.selected],
     intensity: draft.intensity,
@@ -1949,9 +2089,14 @@ function confirmActionPlan() {
   state.lastCareAt = Date.now();
   $("#cat-line").textContent = shortCareResult(draft.action, effects);
   checkAchievements();
+  if (queueImmediateRisk(completedAction)) {
+    saveGame();
+    render();
+    return;
+  }
   saveGame();
   render();
-  animateCat(draft.action === "vet" || draft.action === "lifestyle" ? "startled" : "playing");
+  animateCat(completedAction === "vet" || completedAction === "lifestyle" ? "startled" : "playing");
 }
 
 function buyShopItem(id) {
@@ -2114,14 +2259,26 @@ function illnessEvent() {
     choices: [
       {
         label: "立即看獸醫並治療",
-        money: 2600,
-        time: 5,
-        energy: 18,
+        money: 9600,
+        time: 7,
+        energy: 26,
         health: -42,
         stress: 4,
         medical: true,
         cure: true,
+        billItems: [{ label: "急診/門診", amount: 1800 }, { label: "檢查化驗", amount: 3200 }, { label: "治療與覆診", amount: 4600 }],
         line: "治療完成。你花掉的是錢和時間，換回的是牠不用硬撐。",
+      },
+      {
+        label: "暫時不醫治",
+        money: 0,
+        time: 0,
+        energy: 0,
+        health: 35,
+        stress: 18,
+        deathChance: 0.55,
+        mistake: "illnessDelay",
+        line: "你把生病當成觀察看看。牠可能撐過去，也可能撐不過。",
       },
     ],
   };
@@ -2225,6 +2382,11 @@ function resolveActionChoice(index) {
   state.currentAction = null;
   $("#cat-line").textContent = choice.line || pick("good");
   checkAchievements();
+  if (queueImmediateRisk(action)) {
+    saveGame();
+    render();
+    return;
+  }
   saveGame();
   render();
 }
@@ -2312,6 +2474,26 @@ function diseaseChance(event) {
   return clamp(chance, 0.004, event.maxChance || 0.25);
 }
 
+function diseaseEventWithUntreatedChoice(event) {
+  const severe = /(急症|阻塞|腎|胰|異物|手術|住院|堵塞|blockage|kidney|pancreatitis)/i.test(`${event.id} ${event.title} ${event.text}`);
+  const untreated = {
+    label: severe ? "不治療，先拖著看" : "先不看醫生",
+    money: 0,
+    time: 0,
+    energy: 0,
+    health: severe ? 46 : 28,
+    stress: severe ? 22 : 12,
+    deathChance: severe ? 0.72 : 0.32,
+    mistake: "illnessDelay",
+    line: severe ? "你省下了眼前的錢，但把死亡風險推到牠身上。" : "你選擇觀察，風險仍然留在牠身體裡。",
+  };
+  return {
+    ...event,
+    blocking: true,
+    choices: [...event.choices, untreated],
+  };
+}
+
 function pickDiseaseEvent() {
   const candidates = diseaseEvents.filter((event) => {
     if (event.once && state.medical.chronic?.[event.once]) return false;
@@ -2320,7 +2502,7 @@ function pickDiseaseEvent() {
   const hits = candidates.filter((event) => Math.random() < diseaseChance(event));
   if (!hits.length) return null;
   hits.sort((a, b) => diseaseChance(b) - diseaseChance(a));
-  return hits[0];
+  return diseaseEventWithUntreatedChoice(hits[0]);
 }
 
 function evolutionResult() {
@@ -2331,6 +2513,19 @@ function evolutionResult() {
   const mistakeLoad = Object.values(state.careMistakes || {}).reduce((sum, item) => sum + item.severity, 0);
   const modifier = mistakeLoad > 18 ? "照顧錯誤偏多，最終分支會帶有更高病痛和疏離陰影。" : "照顧錯誤可控，牠的成長主要由陪伴和活動決定。";
   return { ...meta, key, modifier, bondingBand, activityBand };
+}
+
+function reviewDiaryLine(review) {
+  if (currentLang === "en") {
+    if (review.financial?.medicalSpend > 0) return `I needed medical care this year. The bill was not small, but you noticed me.`;
+    if (review.issues?.length) return `Some things were missed this year. I may look fine, but those choices stay in my body.`;
+    if (review.stats?.bonding >= 65) return `You kept showing up, so I came closer. This is what trust feels like.`;
+    return `This year felt stable. Food, litter, play, safety, and checkups still need to keep happening.`;
+  }
+  if (review.financial?.medicalSpend > 0) return "今年我需要看醫生。帳單不小，但你有看見我。";
+  if (review.issues?.length) return "今年有些事被忽略了。我看起來可能還好，但那些選擇會留在身體裡。";
+  if (review.stats?.bonding >= 65) return "你一直有出現，所以我更願意靠近你。這就是信任。";
+  return "今年算穩定。吃飯、砂盆、陪玩、安全和檢查，明年仍然不能停。";
 }
 
 function annualIssueSnapshot() {
@@ -2537,18 +2732,81 @@ function pickRandomEvent() {
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+function fatalEvent(id, title, text, reason) {
+  return {
+    id,
+    title,
+    text,
+    blocking: true,
+    choices: [
+      { label: "查看結局", death: reason },
+    ],
+  };
+}
+
 function pickDeferredFatalEvent() {
   if (!hasValidDurable("windowNet") && state.month >= 5 && Math.random() < 0.08 + state.accidentRisk / 600) {
+    return fatalEvent(
+      "fatal-window-fall",
+      "墜窗事故",
+      "之前你選擇暫時不處理窗網。這一次牠追逐窗外影子時跌落，遊戲結束。",
+      "未安裝窗網導致墜窗死亡。這不是恐嚇，是很多真實意外的結構。"
+    );
+  }
+  return null;
+}
+
+function pickImmediateRiskEvent(action = "") {
+  if (state.death || state.currentEvent || state.currentReview) return null;
+  const actionBoost = {
+    nutrition: 0.01,
+    hygiene: 0.01,
+    enrichment: 0.045,
+    training: 0.025,
+    lifestyle: 0.04,
+    vet: -0.02,
+  }[action] || 0;
+  if (!hasValidDurable("windowNet") && state.month >= 5) {
+    const fallChance = clamp(0.012 + actionBoost + state.accidentRisk / 950 + buriedRiskPressure() / 3000, 0, 0.28);
+    if (Math.random() < fallChance) {
+      return fatalEvent(
+        "instant-window-fall",
+        "突發墜窗死亡",
+        "你剛完成一個日常動作，但之前沒有處理窗網。牠被窗外動靜吸引，事故就在這一刻發生。",
+        "未安裝窗網，事故不是固定日期才發生，而是失職後任何日常時刻都可能發生。"
+      );
+    }
+  }
+  if (state.healthRisk >= 90) {
+    const collapseChance = clamp(0.04 + (state.healthRisk - 80) / 120 + state.neglectTurns * 0.04, 0, 0.55);
+    if (Math.random() < collapseChance) {
+      return fatalEvent(
+        "instant-health-collapse",
+        "病情突然惡化",
+        "牠前面已經累積了高健康風險。你以為只是做完一件普通照顧，牠卻突然撐不住了。",
+        "健康風險長期過高，沒有及時醫治，導致病情突然惡化死亡。"
+      );
+    }
+  }
+  const disease = pickDiseaseEvent();
+  if (disease) {
     return {
-      id: "fatal-window-fall",
-      title: "墜窗事故",
-      text: "之前你選擇暫時不處理窗網。這一次牠追逐窗外影子時跌落，遊戲結束。",
-      choices: [
-        { label: "查看結局", death: "未安裝窗網導致墜窗死亡。這不是恐嚇，是很多真實意外的結構。" },
-      ],
+      ...disease,
+      text: `剛完成「${actionMeta[action]?.title || "照顧"}」後，牠的狀態突然不對。${disease.text}`,
     };
   }
   return null;
+}
+
+function queueImmediateRisk(action = "") {
+  const event = pickImmediateRiskEvent(action);
+  if (!event) return false;
+  state.currentEvent = event;
+  state.currentAction = null;
+  state.actionDraft = null;
+  $("#cat-line").textContent = event.text;
+  animateCat(/病|痛|腎|胰|急診|住院|死亡|惡化/.test(`${event.title} ${event.text}`) ? "startled" : "playing");
+  return true;
 }
 
 function applyUnneuteredRisks() {
@@ -2711,6 +2969,19 @@ function resolveChoice(index) {
   if ((choice.accident || 0) >= 15) recordMistake("unsafeHome", `${event.title}選擇「${choice.label}」讓意外風險上升。`, 2);
   if ((choice.stress || 0) >= 15 || (choice.bonding || 0) <= -8) recordMistake("punishment", `${event.title}選擇「${choice.label}」傷害信任或增加壓力。`, 1);
   if ((choice.money || 0) >= 2500 || (choice.health || 0) >= 15 || (choice.accident || 0) >= 15) state.majorDecisions += 1;
+  if (choice.deathChance) {
+    const actualDeathChance = clamp(choice.deathChance + Math.max(0, state.healthRisk - 80) / 100, 0, 0.96);
+    if (Math.random() < actualDeathChance || state.healthRisk >= 99) {
+      state.death = {
+        reason: `${event.title}沒有及時治療。你沒有立刻花錢處理，代價變成牠的生命。`,
+        month: state.month,
+      };
+      state.currentEvent = null;
+      saveGame();
+      finishGame();
+      return;
+    }
+  }
   if (choice.death) {
     state.death = { reason: choice.death, month: state.month };
     state.currentEvent = null;
@@ -2805,6 +3076,40 @@ function renderScene() {
     button.classList.toggle("selected", button.dataset.scene === scene);
   });
   $("#shop-panel").classList.toggle("hidden", scene !== "shop");
+  const labels = currentLang === "en"
+    ? {
+        living: { window: "Window safety", bowl: "Food bowl", litter: "Litter box", toy: "Toy", supplies: "Supply box", bed: "Bed", scratcher: "Scratcher", tree: "Cat tree" },
+        balcony: { window: "Window net", supplies: "Safety kit" },
+        bedroom: { bed: "Cat bed", toy: "Quiet toy", supplies: "Bed supplies" },
+        garden: { toy: "Garden play" },
+        shop: { supplies: "Shop shelf" },
+        park: { toy: "Outdoor play" },
+        friend: { bowl: "Guest bowl", toy: "Friend's toy" },
+      }
+    : {
+        living: { window: "窗戶安全", bowl: "食碗", litter: "貓砂盆", toy: "玩具", supplies: "補給箱", bed: "貓窩", scratcher: "抓板", tree: "貓爬架" },
+        balcony: { window: "窗網", supplies: "安全用品" },
+        bedroom: { bed: "貓窩", toy: "安靜玩具", supplies: "睡房用品" },
+        garden: { toy: "庭院陪玩" },
+        shop: { supplies: "商店貨架" },
+        park: { toy: "公園互動" },
+        friend: { bowl: "客用食碗", toy: "朋友玩具" },
+      };
+  const activeLabels = { ...labels.living, ...(labels[scene] || {}) };
+  [
+    ["#room-window", activeLabels.window],
+    ["#room-food-bowl", activeLabels.bowl],
+    ["#room-litter", activeLabels.litter],
+    ["#room-toy", activeLabels.toy],
+    ["#room-supplies", activeLabels.supplies],
+    ["#room-cat-bed", activeLabels.bed],
+    ["#room-scratcher", activeLabels.scratcher],
+    ["#room-cat-tree", activeLabels.tree],
+  ].forEach(([selector, label]) => {
+    const node = $(selector);
+    const labelNode = node?.querySelector(".hotspot-label");
+    if (labelNode) labelNode.textContent = label;
+  });
 }
 
 function renderShop() {
@@ -2836,67 +3141,207 @@ function renderShop() {
   });
 }
 
-function renderActionMini(action) {
-  const actions = $("#choice-actions");
-  const meta = miniMeta(action);
-  const progress = miniProgress();
-  const ready = progress >= 100;
-  const mini = document.createElement("div");
-  mini.className = `mini-game ${ready ? "done" : ""} ${state.actionDraft?.selected?.length ? "" : "empty"}`;
-  mini.innerHTML = `
-    <div class="mini-copy">
-      <strong>${state.actionDraft?.selected?.length ? meta.verb : currentLang === "en" ? "Choose one first" : "先選一項"}</strong>
-      <span>${state.actionDraft?.selected?.length ? meta.hint : currentLang === "en" ? "Choose one or more care items above before doing the action." : "上面選一個或多個照顧項目，才可以動手做。"}</span>
-    </div>
-    <div class="mini-stage" aria-label="${meta.verb}">
-      <button class="mini-token" type="button" draggable="true" ${state.actionDraft?.selected?.length ? "" : "disabled"}>${meta.item}</button>
-      <div class="mini-target" data-mini-target>${meta.target}</div>
-    </div>
-    <div class="mini-meter" aria-hidden="true"><span style="width:${progress}%"></span></div>
-    <button class="ghost-button mini-action" type="button" ${state.actionDraft?.selected?.length && !ready ? "" : "disabled"}>${ready ? currentLang === "en" ? "Action complete" : "動作完成" : meta.verb}</button>
-  `;
-  actions.appendChild(mini);
-  const token = mini.querySelector(".mini-token");
-  const target = mini.querySelector("[data-mini-target]");
-  const actionButton = mini.querySelector(".mini-action");
-  if (!state.actionDraft?.selected?.length || ready) return;
-  token.addEventListener("click", () => advanceMiniProgress(34));
-  actionButton.addEventListener("click", () => advanceMiniProgress(action === "enrichment" ? 25 : 34));
-  token.addEventListener("dragstart", (event) => {
-    event.dataTransfer?.setData("text/plain", action);
-  });
-  target.addEventListener("dragover", (event) => {
-    event.preventDefault();
-    target.classList.add("hover");
-  });
-  target.addEventListener("dragleave", () => target.classList.remove("hover"));
-  target.addEventListener("drop", (event) => {
-    event.preventDefault();
-    target.classList.remove("hover");
-    advanceMiniProgress(50);
-  });
+function choiceInventoryPreview(choice, repeat) {
+  if (choice.inventoryFirst) {
+    const key = choice.inventoryFirst;
+    const needed = annualInventoryAmount(key, choice.use?.[key] || 1, repeat);
+    const have = state.inventory[key] || 0;
+    const item = shopItem(key);
+    const unit = item?.add?.[key] || 1;
+    const missing = Math.max(0, needed - have);
+    const packages = missing ? Math.ceil(missing / unit) : 0;
+    const cost = packages * (item?.price || 0);
+    return {
+      cost,
+      time: packages * (item?.time || 0),
+      energy: packages * (item?.energy || 0),
+      text: missing
+        ? currentLang === "en"
+          ? `Inventory ${itemName(key)} ${have}/${needed}; missing stock auto-buys ${packages} pack(s).`
+          : `背包${itemName(key)} ${have}/${needed}，不足會自動補買 ${packages} 份。`
+        : currentLang === "en"
+          ? `Inventory has ${itemName(key)} ${have}/${needed}; this year only consumes stock, no food purchase fee.`
+          : `背包已有${itemName(key)} ${have}/${needed}，今年只消耗庫存，不再收食物購買費。`,
+    };
+  }
+  if (choice.consumeFood) {
+    const totalFood = ["freshFood", "wetFood", "dryFood", "freezeDry", "treats"].reduce((sum, key) => sum + (state.inventory[key] || 0), 0);
+    return {
+      cost: 0,
+      time: 0,
+      energy: 0,
+      text: currentLang === "en"
+        ? `Uses any food in inventory: ${totalFood}/${repeat} yearly meals available.`
+        : `會用背包任一食物：目前 ${totalFood}/${repeat} 份年度用量。`,
+    };
+  }
+  const uses = Object.entries(choice.use || {});
+  if (uses.length) {
+    return {
+      cost: 0,
+      time: 0,
+      energy: 0,
+      text: uses.map(([key, amount]) => {
+        const needed = annualInventoryAmount(key, amount, repeat);
+        return currentLang === "en"
+          ? `Uses ${itemName(key)} ${needed}; inventory ${state.inventory[key] || 0}.`
+          : `消耗${itemName(key)} ${needed}；背包現有 ${state.inventory[key] || 0}。`;
+      }).join(" "),
+    };
+  }
+  if (choice.replaceDurables?.length) {
+    const names = choice.replaceDurables.map((key) => itemName(key)).join("、");
+    return {
+      cost: 0,
+      time: 0,
+      energy: 0,
+      text: currentLang === "en"
+        ? `Only buys or replaces ${names} when missing or expired.`
+        : `只會在缺少或過期時補買：${names}。`,
+    };
+  }
+  const adds = Object.entries(choice.add || {});
+  if (adds.length) {
+    return {
+      cost: 0,
+      time: 0,
+      energy: 0,
+      text: adds.map(([key, amount]) => {
+        const added = annualInventoryAmount(key, amount, repeat);
+        return currentLang === "en" ? `Adds ${itemName(key)} ${added}.` : `加入背包：${itemName(key)} ${added}。`;
+      }).join(" "),
+    };
+  }
+  return { cost: 0, time: 0, energy: 0, text: currentLang === "en" ? "No inventory item required." : "不需要背包物品。" };
+}
+
+function choiceEffectPreview(choice) {
+  const fields = [
+    ["hunger", currentLang === "en" ? "Satiety" : "飽肚"],
+    ["hydration", currentLang === "en" ? "Hydration" : "水分"],
+    ["happiness", currentLang === "en" ? "Mood" : "心情"],
+    ["bonding", currentLang === "en" ? "Bonding" : "親密"],
+    ["boredom", currentLang === "en" ? "Boredom" : "無聊"],
+    ["stress", currentLang === "en" ? "Stress" : "壓力"],
+    ["health", currentLang === "en" ? "Health risk" : "健康風險"],
+    ["cleanliness", currentLang === "en" ? "Cleanliness" : "清潔"],
+    ["activity", currentLang === "en" ? "Activity" : "活動"],
+    ["accident", currentLang === "en" ? "Accident risk" : "意外風險"],
+  ];
+  const parts = fields
+    .filter(([key]) => choice[key])
+    .slice(0, 4)
+    .map(([key, label]) => `${label}${choice[key] > 0 ? "+" : ""}${choice[key]}`);
+  return parts.length ? parts.join(" · ") : currentLang === "en" ? "Basic care effect" : "基礎照顧效果";
+}
+
+function compactChoiceLine(action, choice, index) {
+  const detail = actionChoiceText(action, choice, index, "detail") || "";
+  const first = detail.split(/[。.!；;]/)[0].trim();
+  if (first.length <= 16) return first;
+  return `${first.slice(0, 16)}…`;
+}
+
+function compactInventoryLine(choice, repeat) {
+  if (choice.inventoryFirst) {
+    const key = choice.inventoryFirst;
+    const needed = annualInventoryAmount(key, choice.use?.[key] || 1, repeat);
+    const have = state.inventory[key] || 0;
+    return have >= needed
+      ? currentLang === "en" ? `Inventory ${have}/${needed}` : `背包 ${have}/${needed}`
+      : currentLang === "en" ? `Missing ${needed - have}` : `缺 ${needed - have}`;
+  }
+  if (choice.consumeFood) {
+    const totalFood = ["freshFood", "wetFood", "dryFood", "freezeDry", "treats"].reduce((sum, key) => sum + (state.inventory[key] || 0), 0);
+    return currentLang === "en" ? `Inventory food ${totalFood}/${repeat}` : `背包食物 ${totalFood}/${repeat}`;
+  }
+  if (choice.replaceDurables?.length) return currentLang === "en" ? "Replace only if missing" : "缺/壞才補";
+  if (Object.keys(choice.add || {}).length) return currentLang === "en" ? "Adds to bag" : "加入背包";
+  if (Object.keys(choice.use || {}).length) return currentLang === "en" ? "Uses inventory" : "消耗背包";
+  return "";
+}
+
+function actionReactionLine(action, choice) {
+  const label = choice.label.replace(/，.*$/, "");
+  if (currentLang === "en") {
+    const reactions = {
+      nutrition: `Bowl changed: ${label}. Watch hydration and future bills.`,
+      hygiene: `The litter area changed. The cat notices quickly.`,
+      enrichment: `The cat reacts to play now, not after a paragraph.`,
+      supplies: `Home supplies changed. Stock matters when emergencies arrive.`,
+      training: `Behavior guidance changed trust and stress.`,
+      sleep: `Night rhythm changed. This affects both of you.`,
+      vet: `Medical care means time, money, and relief.`,
+      lifestyle: `Safety planning changed future accident risk.`,
+    };
+    return reactions[action] || choice.line || label;
+  }
+  const reactions = {
+    nutrition: `食碗變了：${label}。水分和日後帳單會跟著變。`,
+    hygiene: "砂盆和環境變了，牠會立刻感覺到。",
+    enrichment: "牠對陪玩有反應了，不需要先讀一大段字。",
+    supplies: "家裡補給變了，突發時會用得上。",
+    training: "引導方式會改變信任和壓力。",
+    sleep: "夜間節奏變了，影響牠也影響你。",
+    vet: "醫療照顧就是時間、金錢和安心。",
+    lifestyle: "安全安排會改變之後的意外風險。",
+  };
+  return reactions[action] || choice.line || label;
+}
+
+function closeChoicePanel() {
+  if (!state) return;
+  if (state.currentReview) {
+    closeAnnualReview();
+    return;
+  }
+  if (state.currentEvent) {
+    showBanner(currentLang === "en" ? "This is a forced event. Choose one response before continuing." : "這是強提醒事件，請先選擇處理或延後，才能繼續。");
+    return;
+  }
+  state.currentAction = null;
+  state.actionDraft = null;
+  saveGame();
+  render();
+}
+
+let lockedPageScrollY = 0;
+
+function setChoicePanelOpen(open) {
+  const body = document.body;
+  if (!body) return;
+  if (open && !body.classList.contains("modal-open")) {
+    lockedPageScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    body.style.top = `-${lockedPageScrollY}px`;
+    body.classList.add("modal-open");
+  }
+  if (!open && body.classList.contains("modal-open")) {
+    body.classList.remove("modal-open");
+    body.style.top = "";
+    window.scrollTo(0, lockedPageScrollY);
+  }
 }
 
 function renderChoicePanel() {
   const panel = $("#choice-panel");
   if (!state.currentReview && !state.currentEvent && !state.currentAction) {
     panel.classList.add("hidden");
+    setChoicePanelOpen(false);
     $("#next-day-button").disabled = false;
     $("#fast-forward-button").disabled = false;
     return;
   }
+  setChoicePanelOpen(true);
+  $("#choice-close")?.classList.toggle("attention", Boolean(state.currentEvent));
 
   if (state.currentReview) {
     const review = state.currentReview;
     panel.classList.remove("hidden");
-    $("#choice-title").textContent = `第${review.year}年回顧：${state.catName} 的一年`;
-    const headline = review.issues.length
-      ? `這一年有 ${review.issues.length} 類照顧問題被記錄。重複被提醒但沒有改善的項目，已埋入未來疾病、事故或死亡風險。`
-      : "這一年照顧穩定，沒有新的重大照顧錯誤被記錄。";
-    $("#choice-text").textContent = headline;
+    $("#choice-title").textContent = currentLang === "en" ? `Year ${review.year} bill` : `第${review.year}年帳單`;
+    $("#choice-text").textContent = reviewDiaryLine(review);
     $("#choice-actions").innerHTML = "";
     const summary = document.createElement("div");
-    summary.className = "plan-summary annual-summary";
+    summary.className = "annual-summary bill-card";
     const issueLines = review.issues.slice(0, state.reviewExpanded ? 8 : 3).map((issue) => {
       const buried = state.buriedRisks[issue.key] ? `；埋雷 +${state.buriedRisks[issue.key]}` : "";
       return `<li><strong>${issue.title}</strong><span>本年 ${issue.count} 次，嚴重度 ${issue.severity}${issue.repeated ? "，去年已提醒仍未改善" : ""}${buried}</span><small>${issue.latest}</small></li>`;
@@ -2908,15 +3353,20 @@ function renderChoicePanel() {
       .join(" · ");
     const biggestBill = review.financial?.biggestBill;
     summary.innerHTML = `
-      <strong>${review.age}狀態回顧</strong>
-      <span>今年帳單 ${money.format(review.financial?.yearSpend || 0)}${categories ? `：${categories}` : ""}</span>
-      <span>最大單次帳單 ${biggestBill ? `${money.format(biggestBill.amount)}（${biggestBill.reason}）` : "無"} · 剩餘基金 ${money.format(review.financial?.fundLeft || state.fund)}</span>
-      <span>健康風險 ${review.stats.healthRisk} · 壓力 ${review.stats.stress} · 親密 ${review.stats.bonding} · 活動 ${review.stats.activity}</span>
-      <span>清潔 ${review.stats.cleanliness} · 睡眠債 ${review.stats.sleepDebt} · 砂盆髒污 ${review.stats.poopLevel} · 零食比例 ${review.stats.snackRatio}%</span>
-      <small>成長傾向：${review.evolution.title}。${review.evolution.detail}</small>
-      ${issueLines.length ? `<ul class="review-issues">${issueLines.join("")}</ul>` : "<small>沒有新增埋雷，牠今年被穩定地照顧到了。</small>"}
+      <div class="bill-total">
+        <span>${currentLang === "en" ? "Spent this year" : "今年花費"}</span>
+        <strong>${money.format(review.financial?.yearSpend || 0)}</strong>
+      </div>
+      <div class="bill-grid">
+        <span>${currentLang === "en" ? "Biggest bill" : "最大帳單"}<strong>${biggestBill ? `${money.format(biggestBill.amount)} · ${biggestBill.reason}` : currentLang === "en" ? "None" : "無"}</strong></span>
+        <span>${currentLang === "en" ? "Medical" : "醫療"}<strong>${money.format(review.financial?.medicalSpend || 0)}</strong></span>
+        <span>${currentLang === "en" ? "Fund left" : "剩餘基金"}<strong>${money.format(review.financial?.fundLeft || state.fund)}</strong></span>
+      </div>
+      ${categories ? `<small>${categories}</small>` : ""}
+      <p class="cat-diary">${escapeHtml(reviewDiaryLine(review))}</p>
+      ${issueLines.length ? `<ul class="review-issues compact">${issueLines.join("")}</ul>` : `<small>${currentLang === "en" ? "No new buried risks." : "沒有新增埋雷。"}</small>`}
     `;
-    $("#choice-actions").appendChild(summary);
+    if (draft.selected.length || preview.error) $("#choice-actions").appendChild(summary);
     const read = document.createElement("button");
     read.type = "button";
     read.className = "ghost-button";
@@ -2950,7 +3400,7 @@ function renderChoicePanel() {
           lifestyle: "Travel, outings, pet sitters, and home safety planning.",
         }
       : {
-          nutrition: "選今個月點餵。可以混合，但錢、時間和精力會疊加。",
+          nutrition: "選今年點餵。可以混合，但錢、時間和精力會疊加。",
           supplies: "只補缺的和快壞的，不需要每次全買。",
           hygiene: "清砂、深清、梳毛都會吃時間。你選多少，牠就承受多少結果。",
           enrichment: "陪玩不是裝飾，是消耗精力、建立親密和減少拆家的方式。",
@@ -2971,7 +3421,12 @@ function renderChoicePanel() {
     const preview = buildActionPlan(action, draft.selected, draft.intensity);
     panel.classList.remove("hidden");
     $("#choice-title").textContent = actionTitle(action);
-    $("#choice-text").textContent = compactIntro[action] || currentNeeds().descriptions[action];
+    const intro = compactIntro[action] || currentNeeds().descriptions[action];
+    $("#choice-text").textContent = state.completedActions[action]
+      ? currentLang === "en"
+        ? `Completed this year. Tap again to update the same plan.`
+        : `今年已完成。再點是更新同一份安排。`
+      : intro;
     $("#choice-actions").innerHTML = "";
     actionChoices[action].forEach((choice, index) => {
       const button = document.createElement("button");
@@ -2979,32 +3434,54 @@ function renderChoicePanel() {
       const selected = draft.selected.includes(index);
       button.className = `ghost-button plan-choice ${selected ? "selected" : ""}`;
       const repeat = annualRepeatForChoice(action, choice);
-      const annualMoney = (choice.money || 0) * repeat;
-      const annualTime = (choice.time || 0) * repeat;
-      const annualEnergy = (choice.energy || 0) * repeat;
+      const inventoryPreview = choiceInventoryPreview(choice, repeat);
+      const annualMoney = choice.inventoryFirst ? inventoryPreview.cost : (choice.money || 0) * repeat;
+      const annualTime = (choice.time || 0) * repeat + inventoryPreview.time;
+      const annualEnergy = (choice.energy || 0) * repeat + inventoryPreview.energy;
       const parts = [];
       if (annualMoney) parts.push(money.format(annualMoney));
       if (annualTime) parts.push(`${annualTime}h`);
       if (annualEnergy) parts.push(energyText(annualEnergy));
       const title = document.createElement("strong");
       title.textContent = actionChoiceText(action, choice, index, "label");
+      const info = document.createElement("span");
+      info.className = "choice-info";
+      info.textContent = "i";
+      info.setAttribute("aria-label", currentLang === "en" ? "Details" : "詳情");
+      title.appendChild(info);
       const detail = document.createElement("small");
-      detail.textContent = parts.length ? `${parts.join(" / ")}${repeat > 1 ? currentLang === "en" ? " · yearly total" : " · 年度換算" : ""}` : actionChoiceText(action, choice, index, "detail") || "";
-      if (choice.detail) detail.title = repeat > 1
-        ? `${actionChoiceText(action, choice, index, "detail")}（${currentLang === "en" ? "converted into yearly care" : "已按一年重複照顧換算"}）`
-        : actionChoiceText(action, choice, index, "detail");
-      button.append(title, detail);
-      button.addEventListener("click", () => {
+      detail.className = "choice-detail";
+      detail.textContent = compactChoiceLine(action, choice, index);
+      const meta = document.createElement("span");
+      meta.className = "choice-meta";
+      meta.textContent = parts.length ? parts.join(" / ") : currentLang === "en" ? "No cost" : "不扣費";
+      const inventory = document.createElement("span");
+      inventory.className = "choice-inventory";
+      inventory.textContent = compactInventoryLine(choice, repeat);
+      const effect = document.createElement("span");
+      effect.className = "choice-effect";
+      effect.textContent = choiceEffectPreview(choice);
+      button.append(title, detail, meta, inventory, effect);
+      button.addEventListener("click", (event) => {
+        if (event.target.closest(".choice-info")) {
+          event.stopPropagation();
+          showInfo(
+            actionChoiceText(action, choice, index, "label"),
+            `${actionChoiceText(action, choice, index, "detail") || ""}\n${inventoryPreview.text}\n${choiceEffectPreview(choice)}`,
+          );
+          return;
+        }
         const selectedSet = new Set(state.actionDraft.selected);
         if (selectedSet.has(index)) selectedSet.delete(index);
         else selectedSet.add(index);
         state.actionDraft.selected = Array.from(selectedSet).sort((a, b) => a - b);
         state.actionDraft.progress = 0;
+        $("#cat-line").textContent = actionReactionLine(action, choice);
+        animateCat(action === "vet" || action === "lifestyle" ? "startled" : "playing");
         render();
       });
       $("#choice-actions").appendChild(button);
     });
-    renderActionMini(action);
     const summary = document.createElement("div");
     summary.className = "plan-summary";
     if (preview.error) {
@@ -3020,30 +3497,35 @@ function renderChoicePanel() {
           ? ` Missing items have been added to the cost automatically.`
           : ` 已自動把缺少的${Array.from(new Set(effects.autoPurchases)).join("、")}加入成本。`
         : "";
+      const coveredText = effects.inventoryCovered?.length
+        ? currentLang === "en"
+          ? ` Inventory covered ${Array.from(new Set(effects.inventoryCovered)).map(itemName).join(", ")}; no new food purchase fee.`
+          : ` 背包已覆蓋${Array.from(new Set(effects.inventoryCovered)).map(itemName).join("、")}，本年不再收食物購買費。`
+        : "";
       const habitText = effects.habitNote ? ` ${effects.habitNote}` : "";
       const yearText = effects.annualized ? currentLang === "en" ? " Converted into yearly repeated care." : " 已按一年重複照顧換算。" : "";
       const billText = effects.billItems?.length
-        ? `<small>${currentLang === "en" ? "Bill" : "帳單"}：${effects.billItems.slice(0, 4).map((item) => `${item.label}${money.format(item.amount)}`).join(" / ")}</small>`
+        ? `<small>${currentLang === "en" ? "Bill" : "帳單"}：${effects.billItems.slice(0, 2).map((item) => `${item.label}${money.format(item.amount)}`).join(" / ")}</small>`
         : "";
-      summary.innerHTML = `<strong>${money.format(effects.money)} · ${effects.time}h · ${energyText(effects.energy)}</strong><span>${currentLang === "en" ? "Year total" : "今年累積"}：${afterTime}h / ${energyText(afterEnergy)} · ${effortText(afterLevel)}</span>${billText}<small>${yearText}${autoText}${habitText}${effects.sceneNote ? ` ${effects.sceneNote}` : ""}${effects.time > state.timeLeft ? currentLang === "en" ? " Not enough time this year; adjust choices." : " 今年時間不足，請調整。" : ""}</small>`;
+      summary.innerHTML = `<strong>${money.format(effects.money)} · ${effects.time}h · ${energyText(effects.energy)}</strong><span>${currentLang === "en" ? "This year after choice" : "選後今年"}：${afterTime}h / ${energyText(afterEnergy)} · ${effortText(afterLevel)}</span>${billText}<small>${autoText || coveredText || habitText || effects.sceneNote || yearText}${effects.time > state.timeLeft ? currentLang === "en" ? " Not enough time." : " 今年時間不足。" : ""}</small>`;
       if (effects.time > state.timeLeft) summary.classList.add("warning");
     }
-    $("#choice-actions").appendChild(summary);
+    if (draft.selected.length || preview.error) $("#choice-actions").appendChild(summary);
     const confirm = document.createElement("button");
     confirm.type = "button";
-    confirm.className = "primary-button";
-    const actionReady = draft.selected.length > 0 && miniProgress() >= 100;
+    confirm.className = "primary-button confirm-action-button";
+    const actionReady = draft.selected.length > 0;
     confirm.textContent = actionReady
       ? state.actionPlans[action]
         ? currentLang === "en" ? "Update this year's plan" : "更新今年安排"
         : currentLang === "en" ? "Finish care" : "完成照顧"
-      : currentLang === "en" ? "Complete the action above first" : "先完成上面動作";
+      : currentLang === "en" ? "Choose at least one item" : "請先選一項";
     confirm.disabled = !actionReady;
     confirm.addEventListener("click", confirmActionPlan);
     $("#choice-actions").appendChild(confirm);
     const cancel = document.createElement("button");
     cancel.type = "button";
-    cancel.className = "ghost-button";
+    cancel.className = "ghost-button cancel-action-button";
     cancel.textContent = currentLang === "en" ? "Skip for now" : "先不做";
     cancel.addEventListener("click", () => {
       state.currentAction = null;
@@ -3059,22 +3541,45 @@ function renderChoicePanel() {
   const event = state.currentEvent;
   panel.classList.remove("hidden");
   $("#choice-title").textContent = event.title;
-  $("#choice-text").textContent = event.text;
+  $("#choice-text").textContent = event.text.split(/[。.!]/)[0];
   $("#choice-actions").innerHTML = "";
   event.choices.forEach((choice, index) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = index === 0 ? "primary-button" : "ghost-button";
+    button.className = `event-choice ${index === 0 ? "primary-button" : "ghost-button"}`;
     const parts = [];
     if (choice.money) parts.push(money.format(choice.money));
     if (choice.time) parts.push(`${choice.time}h`);
     if (choice.energy) parts.push(`精力${choice.energy}`);
-    button.textContent = parts.length ? `${choice.label}（${parts.join(" / ")}）` : choice.label;
+    button.innerHTML = `<strong>${escapeHtml(choice.label)}</strong>${parts.length ? `<span>${parts.join(" / ")}</span>` : ""}${choice.line ? `<small>${escapeHtml(choice.line.split(/[。.!]/)[0])}</small>` : ""}`;
     button.addEventListener("click", () => resolveChoice(index));
     $("#choice-actions").appendChild(button);
   });
   $("#next-day-button").disabled = true;
   $("#fast-forward-button").disabled = true;
+}
+
+function renderRoomActionGuide() {
+  const guide = $("#room-action-guide");
+  if (!guide) return;
+  $$(".room-hotspot, #cat").forEach((node) => node.classList.remove("active-action"));
+  if (!state.currentAction || state.currentReview || state.currentEvent) {
+    guide.classList.add("hidden");
+    return;
+  }
+  const [title, detail] = actionRoomText(state.currentAction);
+  guide.classList.remove("hidden");
+  guide.querySelector("strong").textContent = title;
+  guide.querySelector("span").textContent = state.actionDraft?.selected?.length
+    ? detail
+    : currentLang === "en"
+      ? "Choose a care option below first. Then complete it in the room image."
+      : "先在下面選方案，再回到圖裡點亮起的物件完成。";
+  guide.querySelector("i").style.width = `${miniProgress()}%`;
+  $$(`[data-room-action="${state.currentAction}"]`).forEach((node) => {
+    if (!node.classList.contains("hidden")) node.classList.add("active-action");
+  });
+  if (["enrichment", "training", "sleep", "vet"].includes(state.currentAction)) $("#cat")?.classList.add("active-action");
 }
 
 function renderNeeds() {
@@ -3248,33 +3753,13 @@ function renderYearBrief() {
   const nextAge = ageYears + 1;
   const risks = yearlyRiskPreview();
   $("#year-brief").innerHTML = `
-    <strong>${currentLang === "en" ? `This click jumps to age ${nextAge}: possible issues this year` : `今年會直接跳到 ${nextAge} 歲：可能發生這些事`}</strong>
+    <summary>
+      <strong>${copy("yearBriefTitle")}</strong>
+      <span>${currentLang === "en" ? `Age ${nextAge}` : `到 ${nextAge} 歲`} · ${copy("yearBriefMore")}</span>
+    </summary>
     <div class="year-risk-list">${risks.map((risk) => `<span>${risk}</span>`).join("")}</div>
-    <span>${currentLang === "en" ? "Each click is not one month. You carry a whole year of food, hygiene, companionship, safety, and medical consequences." : "你每次不是過一個月，而是替牠承擔一整年的飲食、清潔、陪伴、安全和醫療後果。"}</span>
+    <small>${currentLang === "en" ? "One click carries a full year of food, hygiene, companionship, safety, and medical consequences." : "點一次就是承擔一整年的飲食、清潔、陪伴、安全和醫療後果。"}</small>
   `;
-}
-
-function renderVisualStatus() {
-  const chips = currentLang === "en"
-    ? [
-        { icon: state.hunger < 45 ? "🍚" : "🥣", label: state.hunger < 45 ? "Hungry" : "Fed", state: state.hunger < 45 ? "problem" : "good" },
-        { icon: state.cleanliness < 50 || state.poopLevel > 65 ? "💩" : "✨", label: state.cleanliness < 50 || state.poopLevel > 65 ? "Dirty" : "Clean", state: state.cleanliness < 50 || state.poopLevel > 65 ? "problem" : "good" },
-        { icon: state.boredom > 60 ? "🧶" : "🎾", label: state.boredom > 60 ? "Bored" : "Played", state: state.boredom > 60 ? "problem" : "good" },
-        { icon: state.healthRisk > 55 ? "🤒" : "🩺", label: state.healthRisk > 55 ? "Health risk" : "Stable", state: state.healthRisk > 55 ? "problem" : "good" },
-        { icon: state.sleepDebt > 55 ? "🌙" : "🛏", label: state.sleepDebt > 55 ? "Night run" : "Rested", state: state.sleepDebt > 55 ? "problem" : "good" },
-        { icon: state.bonding > 70 ? "💚" : "🐾", label: state.bonding > 70 ? "Bonded" : "Watching", state: state.bonding > 70 ? "good" : "" },
-      ]
-    : [
-        { icon: state.hunger < 45 ? "🍚" : "🥣", label: state.hunger < 45 ? "餓" : "飽", state: state.hunger < 45 ? "problem" : "good" },
-        { icon: state.cleanliness < 50 || state.poopLevel > 65 ? "💩" : "✨", label: state.cleanliness < 50 || state.poopLevel > 65 ? "髒" : "乾淨", state: state.cleanliness < 50 || state.poopLevel > 65 ? "problem" : "good" },
-        { icon: state.boredom > 60 ? "🧶" : "🎾", label: state.boredom > 60 ? "悶" : "有玩", state: state.boredom > 60 ? "problem" : "good" },
-        { icon: state.healthRisk > 55 ? "🤒" : "🩺", label: state.healthRisk > 55 ? "病風險" : "健康", state: state.healthRisk > 55 ? "problem" : "good" },
-        { icon: state.sleepDebt > 55 ? "🌙" : "🛏", label: state.sleepDebt > 55 ? "夜跑" : "安睡", state: state.sleepDebt > 55 ? "problem" : "good" },
-        { icon: state.bonding > 70 ? "💚" : "🐾", label: state.bonding > 70 ? "親近" : "觀察", state: state.bonding > 70 ? "good" : "" },
-      ];
-  $("#visual-status").innerHTML = chips
-    .map((chip) => `<div class="status-chip ${chip.state}"><strong>${chip.icon}</strong><span>${chip.label}</span></div>`)
-    .join("");
 }
 
 function renderEvolutionGrid() {
@@ -3404,10 +3889,11 @@ function updateCatVisual() {
   $("#cat-persona-mark").title = adultShape ? "點擊查看性格標記意思" : "";
   $("#room-window").classList.toggle("safe", state.flags.windowNet);
   $("#room-sofa").classList.toggle("scratched", !state.flags.scratchPost && state.boredom > 55);
-  $("#room-cat-tree").classList.toggle("hidden", !hasValidDurable("catTree"));
-  $("#room-cat-bed").classList.toggle("hidden", !hasValidDurable("catBed"));
-  $("#room-scratcher").classList.toggle("hidden", !hasValidDurable("scratcher") && !state.flags.scratchPost);
-  $("#room-litter").classList.toggle("hidden", !hasValidDurable("litterBox"));
+  const scene = state.currentScene || "living";
+  $("#room-cat-tree").classList.toggle("hidden", !hasValidDurable("catTree") && scene !== "garden");
+  $("#room-cat-bed").classList.toggle("hidden", !hasValidDurable("catBed") && scene !== "bedroom");
+  $("#room-scratcher").classList.toggle("hidden", !hasValidDurable("scratcher") && !state.flags.scratchPost && scene !== "living");
+  $("#room-litter").classList.toggle("hidden", false);
   $("#room-litter").classList.toggle("dirty", state.poopLevel > 60 || state.cleanliness < 45);
   $("#room-light").classList.toggle("off", state.sleepDebt < 25 || state.completedActions.sleep);
 }
@@ -3438,7 +3924,16 @@ function render() {
       ? `Latest bill: ${money.format(lastBill.amount)}. ${lastBill.medical ? "Medical costs can hit suddenly." : "This is part of daily responsibility."}`
       : `最近帳單：${lastBill.reason} ${money.format(lastBill.amount)}。${lastBill.medical ? "醫療會突然吃掉現金。" : "這是日常責任的一部分。"}`
     : copy("noBill");
-  $("#fund-meter").style.width = `${clamp((state.fund / state.initialFund) * 100)}%`;
+  const lifePercent = totalLifeProgressPercent();
+  const fundRemainingPercent = state.initialFund ? clamp((Math.max(0, state.fund) / state.initialFund) * 100) : 0;
+  const lifeYears = lifeYearsElapsed();
+  const lifeText = Number.isInteger(lifeYears) ? `${lifeYears}` : lifeYears.toFixed(1);
+  $("#fund-progress-label").textContent = currentLang === "en" ? "Remaining fund" : "剩餘基金";
+  $("#life-progress-label").textContent = currentLang === "en"
+    ? `Life ${lifeText}/15 years`
+    : `貓生 ${lifeText}/15 年`;
+  $("#fund-remaining-meter").style.width = `${fundRemainingPercent}%`;
+  $("#life-meter").style.width = `${lifePercent}%`;
   $("#stat-hunger").textContent = Math.round(state.hunger);
   $("#stat-happiness").textContent = Math.round(state.happiness);
   $("#stat-cleanliness").textContent = Math.round(state.cleanliness);
@@ -3460,9 +3955,8 @@ function render() {
   const preview = currentPlanPreview();
   $("#stat-time-preview").textContent = preview ? `${currentLang === "en" ? "After choice" : "選擇後"} ${Math.round((state.timeSpent || 0) + preview.time)}h` : "";
   $("#stat-energy-preview").textContent = preview ? `${currentLang === "en" ? "After choice" : "選擇後"} ${Math.round((state.effortSpent || 0) + preview.energy)}` : "";
-  const lifeProgress = ((state.month - state.startAgeMonths - 1) / playableMonths()) * 100;
-  $("#progress-percent").textContent = `${Math.round(lifeProgress)}%`;
-  $("#year-meter").style.width = `${clamp(lifeProgress)}%`;
+  $("#progress-percent").textContent = currentLang === "en" ? `${lifeText}/15y` : `${lifeText}/15年`;
+  $("#year-meter").style.width = `${lifePercent}%`;
   const st = stage();
   $("#stage-label").textContent = currentLang === "en"
     ? `${stageText(st)}: ${stageText(st, "label")} Personality: ${personalityVisible() ? profileText("trait") : "unknown in kitten stage; it emerges through care."}`
@@ -3472,7 +3966,6 @@ function render() {
   renderShop();
   renderNeeds();
   renderYearBrief();
-  renderVisualStatus();
   renderInventory();
   renderDurability();
   renderAchievements();
@@ -3481,11 +3974,13 @@ function render() {
   renderOwnerEffort();
   renderHistory();
   renderChoicePanel();
+  renderRoomActionGuide();
   updateCatVisual();
   renderEvolutionModal();
 }
 
 function finishGame() {
+  setChoicePanelOpen(false);
   const projected = Math.round(clamp(state.spent + state.healthRisk * 1200 + state.accidentRisk * 900, 250000, 900000));
   const ageYears = Math.floor((state.month - 1) / 12);
   const ageMonths = (state.month - 1) % 12;
@@ -3522,6 +4017,7 @@ function finishGame() {
       : "<li><strong>還沒有年度回顧</strong><span>遊戲未走到12個月，暫無年度紀錄。</span></li>";
   $("#reflection-result").textContent = "";
   setScreen("#summary-screen");
+  window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }));
 }
 
 function saveGame() {
@@ -3619,9 +4115,10 @@ $$(".scene-button").forEach((button) => {
 });
 
 $$("[data-room-action]").forEach((target) => {
-  const openAction = () => {
+  const openAction = (event) => {
+    event?.stopPropagation();
     if (target.classList.contains("hidden")) return;
-    applyAction(target.dataset.roomAction);
+    handleRoomInteraction(target.dataset.roomAction);
   };
   target.addEventListener("click", openAction);
   target.addEventListener("keydown", (event) => {
@@ -3631,12 +4128,33 @@ $$("[data-room-action]").forEach((target) => {
   });
 });
 
+$(".room")?.addEventListener("click", (event) => {
+  if (event.target.closest("#cat-mark") || event.target.closest("#cat-persona-mark")) return;
+  if (state?.currentAction) {
+    const hotspot = event.target.closest("[data-room-action]");
+    handleRoomInteraction(hotspot?.dataset.roomAction || state.currentAction);
+    return;
+  }
+  if (event.target.closest("#cat")) handleRoomInteraction("cat");
+});
+
 $$(".pet-menu [data-action]").forEach((button) => {
   button.addEventListener("click", () => applyAction(button.dataset.action));
 });
 
 $("#cat-mark")?.addEventListener("click", () => explainCatMark("warning"));
 $("#cat-persona-mark")?.addEventListener("click", () => explainCatMark("persona"));
+$("#choice-close")?.addEventListener("click", closeChoicePanel);
+$("#cat")?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  if (event.target.closest("button")) return;
+  handleRoomInteraction("cat");
+});
+$("#cat")?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  handleRoomInteraction("cat");
+});
 $("#evolution-close")?.addEventListener("click", closeEvolutionModal);
 $("#evolution-modal")?.addEventListener("click", (event) => {
   if (event.target?.id === "evolution-modal") closeEvolutionModal();
@@ -3648,8 +4166,10 @@ $("#fast-forward-button").addEventListener("click", completeToday);
 $("#summary-button").addEventListener("click", finishGame);
 $("#reset-button").addEventListener("click", resetGame);
 $("#play-again-button").addEventListener("click", resetGame);
+$("#summary-restart-top").addEventListener("click", resetGame);
+$("#summary-top-button").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
 $("#ready-button").addEventListener("click", () => {
-  $("#reflection-result").textContent = "準備好不是不會出事，而是出事時你仍然在。";
+  $("#reflection-result").textContent = "準備好不是不會出事，但是出事時永遠有 MedeciPets 為你提供幫助。";
 });
 $("#not-ready-button").addEventListener("click", () => {
   $("#reflection-result").textContent = "這就是這個遊戲的意義：電子貓可以陪你，真貓等一個準備好的人。";
