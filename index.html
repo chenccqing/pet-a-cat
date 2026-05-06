@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>養之前：15年養貓責任模擬</title>
-    <link rel="stylesheet" href="styles.css?v=20260506-window-status" />
+    <link rel="stylesheet" href="styles.css?v=20260506-popup-layer" />
   </head>
   <body>
     <main class="app-shell">
@@ -182,6 +182,12 @@
               <div class="speech-wrap">
                 <p id="cat-line" class="speech">你而家覺得我可愛，因為你未見過我凌晨三點跑酷。</p>
                 <span id="cat-talk-hint" class="cat-talk-hint">點貓咪聽牠說話</span>
+              </div>
+              <div id="death-overlay" class="death-overlay hidden">
+                <p class="eyebrow">已死亡</p>
+                <h3 id="death-title">牠已經離開。</h3>
+                <p id="death-text"></p>
+                <button id="death-summary-button" class="primary-button" type="button">查看結算</button>
               </div>
               <div id="room-action-guide" class="room-action-guide hidden">
                 <strong></strong>
@@ -450,6 +456,6 @@
       </section>
     </main>
 
-    <script src="game.js?v=20260506-window-status"></script>
+    <script src="game.js?v=20260506-popup-layer"></script>
   </body>
 </html>

@@ -633,6 +633,9 @@ const actionMiniMetaEn = {
   lifestyle: { verb: "Arrange care", hint: "Put the care plan into the schedule.", done: "Care arranged." },
 };
 
+const ACTION_CINEMATIC_MS = 2800;
+const DEATH_CINEMATIC_MS = 3200;
+
 function miniMeta(action) {
   const meta = actionMiniMeta[action] || actionMiniMeta.enrichment;
   if (currentLang !== "en") return meta;
@@ -1106,6 +1109,7 @@ function newState() {
     completedActions: {},
     actionPlans: {},
     actionDraft: null,
+    pendingDeath: null,
     habits: {},
     deferredEvents: {},
     heatCycles: 0,
@@ -1301,6 +1305,7 @@ function ensureStateShape() {
   state.heatCycles ??= 0;
   state.lastVetAt ??= 0;
   if (state.actionDraft === undefined) state.actionDraft = null;
+  if (state.pendingDeath === undefined) state.pendingDeath = null;
   if (state.timeLeft === undefined || state.timeLeft <= 30) state.timeLeft = YEAR_TIME_BUDGET;
   state.timeSpent ??= Math.max(0, YEAR_TIME_BUDGET - (state.timeLeft ?? YEAR_TIME_BUDGET));
   state.effortSpent ??= Math.max(0, 100 - (state.energy ?? 100));
@@ -1345,6 +1350,7 @@ function ensureStateShape() {
 }
 
 function setScene(scene) {
+  if (state.death || state.pendingDeath || state.pendingAnimation) return;
   state.currentScene = scene;
   if (!state.currentAction) {
     $("#cat-line").textContent = currentLang === "en"
@@ -1420,8 +1426,72 @@ function targetMatchesAction(clickedAction) {
   return false;
 }
 
+function cinematicActionLine(action) {
+  const text = currentLang === "en"
+    ? {
+        nutrition: "The cat walks to the bowl and eats. Food is not a button; it is a routine.",
+        supplies: "The cat checks the supply box. Running out is also part of care.",
+        hygiene: "The cat goes to the litter area. Cleanliness changes how safe the home feels.",
+        enrichment: "The cat chases the toy for a while, then comes back calmer.",
+        training: "The cat moves to the scratcher. Guidance works when the right place is ready.",
+        sleep: "The cat settles near the bed. Night rhythm comes from daytime care.",
+        vet: "The cat is taken into care. Treatment costs money, time, and trust.",
+        lifestyle: "The cat checks the window and home safety. Risk lives in the environment.",
+      }
+    : {
+        nutrition: "牠走到食碗前吃飯。餵食不是按一下，是每天都要成立的 routine。",
+        supplies: "牠走到補給箱前聞了聞。用品會消耗，缺了也會變成照顧問題。",
+        hygiene: "牠走到貓砂盆旁。清潔不是數字，是牠每天踩進去的地方。",
+        enrichment: "牠追著玩具跑了一陣，再回到你面前。陪玩要看得見牠真的有放電。",
+        training: "牠走到抓板旁。引導不是罵，是讓牠知道哪裡可以抓。",
+        sleep: "牠靠近貓窩安定下來。晚上能不能睡，和白天有沒有消耗有關。",
+        vet: "牠被帶去照護。醫療不是一句文字，是錢、時間、壓力和信任。",
+        lifestyle: "牠靠近窗邊。窗網和安全不是背景，是事故發生前的責任。",
+      };
+  return text[action] || text.enrichment;
+}
+
+function playCatCinematic(action) {
+  const cat = $("#cat");
+  if (!cat) return Promise.resolve();
+  state.pendingAnimation = action;
+  const motion = action || "enrichment";
+  $("#choice-panel")?.classList.add("hidden");
+  setChoicePanelOpen(false);
+  cat.dataset.motion = motion;
+  cat.classList.remove("idle", "playing", "startled", "eating", "cleaning", "calm");
+  cat.classList.add("cinematic-action");
+  $("#cat-line").textContent = cinematicActionLine(action);
+  $(".room")?.classList.add("is-cinematic");
+  setGameControlsDisabled(true, { keepDeathButton: true });
+  return new Promise((resolve) => {
+    window.setTimeout(() => {
+      cat.classList.remove("cinematic-action");
+      delete cat.dataset.motion;
+      $(".room")?.classList.remove("is-cinematic");
+      state.pendingAnimation = null;
+      setGameControlsDisabled(Boolean(state.death || state.pendingDeath), { keepDeathButton: true });
+      resolve();
+    }, ACTION_CINEMATIC_MS);
+  });
+}
+
+async function completeDraftWithCinematic() {
+  if (!state || state.death || state.pendingDeath || state.pendingAnimation) return;
+  if (!state.actionDraft?.selected?.length) {
+    showBanner(currentLang === "en" ? "Choose at least one care item first." : "請至少選擇一個照顧項目。");
+    return;
+  }
+  const action = state.actionDraft.action;
+  state.actionDraft.progress = 100;
+  await playCatCinematic(action);
+  if (!state || state.death || state.pendingDeath) return;
+  confirmActionPlan({ skipAnimation: true });
+}
+
 function handleRoomInteraction(clickedAction) {
   if (!state) return;
+  if (state.death || state.pendingDeath || state.pendingAnimation) return;
   if (!state.currentAction) {
     if (clickedAction === "cat") {
       talkToCat("tap");
@@ -1443,9 +1513,8 @@ function handleRoomInteraction(clickedAction) {
   state.actionDraft.progress = nextProgress;
   const [title] = actionRoomText(state.currentAction);
   $("#cat-line").textContent = currentLang === "en" ? `${title}: ${nextProgress}%` : `${title}：${nextProgress}%`;
-  animateCat(state.currentAction === "vet" || state.currentAction === "lifestyle" ? "startled" : "playing");
   if (nextProgress >= 100) {
-    confirmActionPlan();
+    completeDraftWithCinematic();
     return;
   }
   saveGame();
@@ -1562,6 +1631,7 @@ function yearlyRiskPreview() {
 }
 
 function applyAction(action) {
+  if (state.death || state.pendingDeath || state.pendingAnimation) return;
   if (state.currentEvent) {
     showBanner(currentLang === "en" ? "Respond to the current strong reminder first. You can handle it or delay it and accept future risk." : "先回應目前的強提醒；你可以處理，也可以選擇延後並承擔後續風險。");
     return;
@@ -2058,7 +2128,7 @@ function revertActionPlan(action) {
   delete state.actionPlans[action];
 }
 
-function confirmActionPlan() {
+function confirmActionPlan(options = {}) {
   const draft = state.actionDraft;
   if (!draft || !draft.selected.length) {
     showBanner("請至少選擇一個照顧項目。可以多選，例如乾糧 + 濕糧混合餵養。");
@@ -2069,11 +2139,13 @@ function confirmActionPlan() {
   const built = buildActionPlan(draft.action, draft.selected, draft.intensity);
   if (built.error) {
     showBanner(built.error);
+    render();
     return;
   }
   const { effects } = built;
   if (effects.time > state.timeLeft) {
     showBanner(`今年可安排時間不足：還剩 ${state.timeLeft}h，這些選項需要 ${effects.time}h。請取消部分選項。`);
+    render();
     return;
   }
   applyActionPlanEffects(draft.action, draft.selected, draft.intensity, effects);
@@ -2096,10 +2168,11 @@ function confirmActionPlan() {
   }
   saveGame();
   render();
-  animateCat(completedAction === "vet" || completedAction === "lifestyle" ? "startled" : "playing");
+  if (!options.skipAnimation) animateCat(completedAction === "vet" || completedAction === "lifestyle" ? "startled" : "playing");
 }
 
 function buyShopItem(id) {
+  if (state.death || state.pendingDeath || state.pendingAnimation) return;
   const item = shopCatalog.find((entry) => entry.id === id);
   if (!item) return;
   spend(item.price, `商店購買：${item.label}`, Boolean(item.medical), { category: item.category === "醫療" ? "醫療" : item.category });
@@ -2801,12 +2874,67 @@ function pickImmediateRiskEvent(action = "") {
 function queueImmediateRisk(action = "") {
   const event = pickImmediateRiskEvent(action);
   if (!event) return false;
+  if (event.choices?.some((choice) => choice.death)) {
+    state.currentEvent = null;
+    state.currentAction = null;
+    state.actionDraft = null;
+    $("#cat-line").textContent = event.text;
+    window.setTimeout(() => {
+      startDeathSequence(event.choices.find((choice) => choice.death)?.death || event.text, fatalKindForEvent(event), event.text);
+    }, 80);
+    return true;
+  }
   state.currentEvent = event;
   state.currentAction = null;
   state.actionDraft = null;
   $("#cat-line").textContent = event.text;
   animateCat(/病|痛|腎|胰|急診|住院|死亡|惡化/.test(`${event.title} ${event.text}`) ? "startled" : "playing");
   return true;
+}
+
+function fatalKindForEvent(event = {}) {
+  return /window|fall|墜窗|跌落|爬窗|窗/.test(`${event.id || ""} ${event.title || ""} ${event.text || ""}`) ? "window" : "illness";
+}
+
+function deathTitle(kind = "illness") {
+  if (currentLang === "en") return kind === "window" ? "Window accident: the cat has died." : "Untreated illness: the cat has died.";
+  return kind === "window" ? "墜窗事故：牠已經死亡。" : "未及時醫治：牠已經死亡。";
+}
+
+function playDeathCinematic(kind = "illness") {
+  const cat = $("#cat");
+  if (!cat) return Promise.resolve();
+  cat.classList.remove("idle", "playing", "startled", "eating", "cleaning", "calm", "cinematic-action");
+  delete cat.dataset.motion;
+  cat.classList.add(kind === "window" ? "death-window" : "death-collapse");
+  $(".room")?.classList.add("is-cinematic", "death-in-progress");
+  return new Promise((resolve) => {
+    window.setTimeout(() => {
+      cat.classList.remove("death-window", "death-collapse");
+      $(".room")?.classList.remove("is-cinematic", "death-in-progress");
+      resolve();
+    }, DEATH_CINEMATIC_MS);
+  });
+}
+
+async function startDeathSequence(reason, kind = "illness", lead = "") {
+  if (!state || state.death) return;
+  state.currentEvent = null;
+  state.currentReview = null;
+  state.currentAction = null;
+  state.actionDraft = null;
+  state.pendingDeath = { reason, kind };
+  $("#cat-line").textContent = lead || deathTitle(kind);
+  setChoicePanelOpen(false);
+  render();
+  await playDeathCinematic(kind);
+  if (!state || state.death) return;
+  state.death = { reason, month: state.month, kind };
+  state.pendingDeath = null;
+  addLog(deathTitle(kind));
+  saveGame();
+  render();
+  showBanner(currentLang === "en" ? "The cat has died. Review the responsibility record when you are ready." : "牠已經死亡。準備好後再查看結算。");
 }
 
 function applyUnneuteredRisks() {
@@ -2833,6 +2961,7 @@ function applyUnneuteredRisks() {
 }
 
 function advanceMonth() {
+  if (state.pendingDeath) return;
   if (state.currentReview) {
     showBanner("先閱讀或關閉年度回顧。回顧裡被重複提醒的問題會變成未來風險。");
     return;
@@ -2894,12 +3023,7 @@ function closeMonth() {
   if (state.healthRisk >= 98 || state.stress >= 98 || state.hunger <= 0) {
     const topRisk = Object.entries(state.buriedRisks || {}).sort(([, a], [, b]) => b - a)[0];
     const buriedText = topRisk ? `年度回顧中反覆未改善的「${mistakeText[topRisk[0]] || topRisk[0]}」也成為原因之一。` : "";
-    state.death = {
-      reason: `長期忽略、壓力或疾病風險累積，牠在這一年內病逝了。${buriedText}`,
-      month: state.month,
-    };
-    saveGame();
-    finishGame();
+    startDeathSequence(`長期忽略、壓力或疾病風險累積，牠在這一年內病逝了。${buriedText}`, "illness");
     return;
   }
 
@@ -2972,21 +3096,13 @@ function resolveChoice(index) {
   if (choice.deathChance) {
     const actualDeathChance = clamp(choice.deathChance + Math.max(0, state.healthRisk - 80) / 100, 0, 0.96);
     if (Math.random() < actualDeathChance || state.healthRisk >= 99) {
-      state.death = {
-        reason: `${event.title}沒有及時治療。你沒有立刻花錢處理，代價變成牠的生命。`,
-        month: state.month,
-      };
-      state.currentEvent = null;
-      saveGame();
-      finishGame();
+      const reason = `${event.title}沒有及時治療。你沒有立刻花錢處理，代價變成牠的生命。`;
+      startDeathSequence(reason, "illness", choice.line || event.text);
       return;
     }
   }
   if (choice.death) {
-    state.death = { reason: choice.death, month: state.month };
-    state.currentEvent = null;
-    saveGame();
-    finishGame();
+    startDeathSequence(choice.death, fatalKindForEvent(event), event.text);
     return;
   }
   addLog(`${event.title}：${choice.label}`);
@@ -3008,6 +3124,7 @@ function resolveChoice(index) {
 }
 
 function completeToday() {
+  if (state.death || state.pendingDeath || state.pendingAnimation) return;
   const required = currentNeeds().required;
   const done = required.filter((key) => state.completedActions[key]).length;
   const total = required.length;
@@ -3026,9 +3143,11 @@ function checkAbandonment() {
     state.death = {
       reason: `你離開了 ${Math.floor(hours)} 小時，超過照顧期限。牠在無人照顧的狀態下病逝了。`,
       month: state.month,
+      kind: "illness",
     };
     saveGame();
-    finishGame();
+    setScreen("#game-screen");
+    render();
     return true;
   } catch {
     return false;
@@ -3299,6 +3418,7 @@ function actionReactionLine(action, choice) {
 
 function closeChoicePanel() {
   if (!state) return;
+  if (state.death || state.pendingDeath) return;
   if (state.currentReview) {
     closeAnnualReview();
     return;
@@ -3332,6 +3452,11 @@ function setChoicePanelOpen(open) {
 
 function renderChoicePanel() {
   const panel = $("#choice-panel");
+  if (state.death || state.pendingDeath) {
+    panel.classList.add("hidden");
+    setChoicePanelOpen(false);
+    return;
+  }
   if (!state.currentReview && !state.currentEvent && !state.currentAction) {
     panel.classList.add("hidden");
     setChoicePanelOpen(false);
@@ -3374,7 +3499,7 @@ function renderChoicePanel() {
       <p class="cat-diary">${escapeHtml(reviewDiaryLine(review))}</p>
       ${issueLines.length ? `<ul class="review-issues compact">${issueLines.join("")}</ul>` : `<small>${currentLang === "en" ? "No new buried risks." : "沒有新增埋雷。"}</small>`}
     `;
-    if (draft.selected.length || preview.error) $("#choice-actions").appendChild(summary);
+    $("#choice-actions").appendChild(summary);
     const read = document.createElement("button");
     read.type = "button";
     read.className = "ghost-button";
@@ -3529,7 +3654,7 @@ function renderChoicePanel() {
         : currentLang === "en" ? "Finish care" : "完成照顧"
       : currentLang === "en" ? "Choose at least one item" : "請先選一項";
     confirm.disabled = !actionReady;
-    confirm.addEventListener("click", confirmActionPlan);
+    confirm.addEventListener("click", completeDraftWithCinematic);
     $("#choice-actions").appendChild(confirm);
     const cancel = document.createElement("button");
     cancel.type = "button";
@@ -3571,7 +3696,7 @@ function renderRoomActionGuide() {
   const guide = $("#room-action-guide");
   if (!guide) return;
   $$(".room-hotspot, #cat").forEach((node) => node.classList.remove("active-action"));
-  if (!state.currentAction || state.currentReview || state.currentEvent) {
+  if (!state.currentAction || state.currentReview || state.currentEvent || state.death || state.pendingDeath) {
     guide.classList.add("hidden");
     return;
   }
@@ -3588,6 +3713,48 @@ function renderRoomActionGuide() {
     if (!node.classList.contains("hidden")) node.classList.add("active-action");
   });
   if (["enrichment", "training", "sleep", "vet"].includes(state.currentAction)) $("#cat")?.classList.add("active-action");
+}
+
+function setGameControlsDisabled(disabled, options = {}) {
+  const selectors = [
+    ".pet-menu button",
+    ".scene-button",
+    "#next-day-button",
+    "#fast-forward-button",
+    "#summary-button",
+    ".need-choice",
+    ".shop-item button",
+    ".room-hotspot",
+    "#cat",
+  ];
+  selectors.forEach((selector) => {
+    $$(selector).forEach((node) => {
+      if (node.id === "death-summary-button" && options.keepDeathButton) return;
+      const wasDeathDisabled = node.classList.contains("disabled-by-death");
+      if ("disabled" in node && (disabled || wasDeathDisabled)) node.disabled = disabled;
+      node.classList.toggle("disabled-by-death", disabled);
+      if (disabled || wasDeathDisabled) node.setAttribute("aria-disabled", disabled ? "true" : "false");
+      if (!("disabled" in node) && (disabled || wasDeathDisabled)) node.tabIndex = disabled ? -1 : 0;
+    });
+  });
+}
+
+function renderDeathOverlay() {
+  const overlay = $("#death-overlay");
+  if (!overlay) return;
+  const ended = Boolean(state.death);
+  const locked = ended || Boolean(state.pendingDeath) || Boolean(state.pendingAnimation);
+  $(".room")?.classList.toggle("game-ended", ended);
+  setGameControlsDisabled(locked, { keepDeathButton: true });
+  if (!ended) {
+    overlay.classList.add("hidden");
+    return;
+  }
+  const kind = state.death.kind || (/窗|window|fall|跌落|墜/.test(state.death.reason || "") ? "window" : "illness");
+  overlay.classList.remove("hidden");
+  $("#death-title").textContent = deathTitle(kind);
+  $("#death-text").textContent = state.death.reason || (currentLang === "en" ? "This death is part of the responsibility record." : "這次死亡會記入責任紀錄。");
+  $("#death-summary-button").textContent = currentLang === "en" ? "View responsibility record" : "查看結算";
 }
 
 function renderNeeds() {
@@ -3693,6 +3860,9 @@ function showInfo(title, text) {
     $("#info-close").addEventListener("click", () => panel.classList.add("hidden"));
     panel.addEventListener("click", (event) => {
       if (event.target === panel) panel.classList.add("hidden");
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") panel.classList.add("hidden");
     });
   }
   $("#info-title").textContent = title;
@@ -3891,6 +4061,9 @@ function updateCatVisual() {
   cat.classList.toggle("cat-kitten", st === "kitten");
   cat.classList.toggle("cat-teen", st === "teen");
   cat.classList.toggle("cat-alert", Boolean(state.currentEvent));
+  const windowDeath = Boolean(state.death && /窗|window|fall|跌落|墜/.test(state.death.reason || ""));
+  cat.classList.toggle("cat-dead", Boolean(state.death && !windowDeath));
+  cat.classList.toggle("cat-gone", windowDeath);
   $("#cat-mark").textContent = painfulEvent ? "痛" : dangerEvent ? "!" : state.currentEvent ? "!" : state.healthRisk > 75 ? "!" : state.stress > 70 ? "…" : "";
   $("#cat-persona-mark").textContent = adultShape ? evolution.mark : "";
   $("#cat-mark").title = $("#cat-mark").textContent ? "點擊查看警示意思" : "";
@@ -3986,6 +4159,7 @@ function render() {
   renderChoicePanel();
   renderRoomActionGuide();
   updateCatVisual();
+  renderDeathOverlay();
   renderEvolutionModal();
 }
 
@@ -4078,9 +4252,12 @@ function loadSavedGame() {
     applyOfflineDrift();
     selectedPersonality = state.personality || selectedPersonality;
     saveGame();
-    setScreen(state.death || state.month > lifeEndMonth() ? "#summary-screen" : "#game-screen");
-    if (state.death || state.month > lifeEndMonth()) finishGame();
-    else render();
+    if (state.month > lifeEndMonth()) {
+      finishGame();
+      return;
+    }
+    setScreen("#game-screen");
+    render();
   } catch {
     localStorage.removeItem(SAVE_KEY);
   }
@@ -4174,6 +4351,7 @@ $("#start-button").addEventListener("click", startGame);
 $("#next-day-button").addEventListener("click", advanceMonth);
 $("#fast-forward-button").addEventListener("click", completeToday);
 $("#summary-button").addEventListener("click", finishGame);
+$("#death-summary-button")?.addEventListener("click", finishGame);
 $("#reset-button").addEventListener("click", resetGame);
 $("#play-again-button").addEventListener("click", resetGame);
 $("#summary-restart-top").addEventListener("click", resetGame);
