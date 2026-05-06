@@ -69,7 +69,7 @@ const uiCopy = {
     heroTitle: "養之前",
     heroLead: "一隻電子貓，陪你先走完一次「責任」。",
     setupTitle: "開始前，設定領養條件",
-    setupNote: "貓咪最終性格不是固定答案，會隨你的餵食、陪伴、清潔、醫療、訓練和忽略方式慢慢改變。",
+    setupNote: "關愛方式會慢慢改變貓咪最終性格；牠不是固定答案，會隨你的餵食、陪伴、清潔、醫療和訓練慢慢形成。",
     startAge: "領養起點",
     sex: "貓性別",
     coat: "貓咪外觀",
@@ -3070,6 +3070,13 @@ function setActionButtonLabels() {
 function renderScene() {
   const scene = state.currentScene || "living";
   const meta = sceneMeta[scene] || sceneMeta.living;
+  const windowSafe = hasValidDurable("windowNet");
+  const windowLabel = currentLang === "en"
+    ? windowSafe ? "Window net installed" : "No window net"
+    : windowSafe ? "窗網已安裝" : "未裝窗網";
+  const windowAria = currentLang === "en"
+    ? windowSafe ? "Window net installed: lower fall risk" : "No window net: high fall risk"
+    : windowSafe ? "窗網已安裝：墜窗風險較低" : "未裝窗網：高墜窗風險";
   $(".room").dataset.scene = scene;
   $("#scene-label").textContent = sceneTitle(scene);
   $$(".scene-button").forEach((button) => {
@@ -3078,8 +3085,8 @@ function renderScene() {
   $("#shop-panel").classList.toggle("hidden", scene !== "shop");
   const labels = currentLang === "en"
     ? {
-        living: { window: "Window safety", bowl: "Food bowl", litter: "Litter box", toy: "Toy", supplies: "Supply box", bed: "Bed", scratcher: "Scratcher", tree: "Cat tree" },
-        balcony: { window: "Window net", supplies: "Safety kit" },
+        living: { window: windowLabel, bowl: "Food bowl", litter: "Litter box", toy: "Toy", supplies: "Supply box", bed: "Bed", scratcher: "Scratcher", tree: "Cat tree" },
+        balcony: { window: windowLabel, supplies: "Safety kit" },
         bedroom: { bed: "Cat bed", toy: "Quiet toy", supplies: "Bed supplies" },
         garden: { toy: "Garden play" },
         shop: { supplies: "Shop shelf" },
@@ -3087,8 +3094,8 @@ function renderScene() {
         friend: { bowl: "Guest bowl", toy: "Friend's toy" },
       }
     : {
-        living: { window: "窗戶安全", bowl: "食碗", litter: "貓砂盆", toy: "玩具", supplies: "補給箱", bed: "貓窩", scratcher: "抓板", tree: "貓爬架" },
-        balcony: { window: "窗網", supplies: "安全用品" },
+        living: { window: windowLabel, bowl: "食碗", litter: "貓砂盆", toy: "玩具", supplies: "補給箱", bed: "貓窩", scratcher: "抓板", tree: "貓爬架" },
+        balcony: { window: windowLabel, supplies: "安全用品" },
         bedroom: { bed: "貓窩", toy: "安靜玩具", supplies: "睡房用品" },
         garden: { toy: "庭院陪玩" },
         shop: { supplies: "商店貨架" },
@@ -3110,6 +3117,7 @@ function renderScene() {
     const labelNode = node?.querySelector(".hotspot-label");
     if (labelNode) labelNode.textContent = label;
   });
+  $("#room-window").setAttribute("aria-label", windowAria);
 }
 
 function renderShop() {
@@ -3719,7 +3727,7 @@ function explainCatMark(type) {
     currentLang === "en" ? "Adult personality mark" : "成年性格標記",
     currentLang === "en"
       ? `The white circle is the adult personality mark. Current branch: "${evolutionText(evolution.key, "title")}". ${evolutionText(evolution.key, "detail")} Care, activity, medical care, hygiene, and neglect move the cat between branches.`
-      : `這個白色圓形是成年後的性格標記。目前是「${evolution.title}」：${evolution.detail} 牠會因你的陪伴、活動量、醫療、清潔和忽略方式，慢慢移向不同性格分支。`,
+      : `這個白色圓形是成年後的性格標記。目前是「${evolution.title}」：${evolution.detail} 牠會因你的關愛方式、活動量、醫療和清潔，慢慢移向不同性格分支。`,
   );
 }
 
@@ -3887,7 +3895,9 @@ function updateCatVisual() {
   $("#cat-persona-mark").textContent = adultShape ? evolution.mark : "";
   $("#cat-mark").title = $("#cat-mark").textContent ? "點擊查看警示意思" : "";
   $("#cat-persona-mark").title = adultShape ? "點擊查看性格標記意思" : "";
-  $("#room-window").classList.toggle("safe", state.flags.windowNet);
+  const windowSafe = hasValidDurable("windowNet");
+  $("#room-window").classList.toggle("safe", windowSafe);
+  $("#room-window").classList.toggle("unsafe", !windowSafe);
   $("#room-sofa").classList.toggle("scratched", !state.flags.scratchPost && state.boredom > 55);
   const scene = state.currentScene || "living";
   $("#room-cat-tree").classList.toggle("hidden", !hasValidDurable("catTree") && scene !== "garden");

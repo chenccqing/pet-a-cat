@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>養之前：15年養貓責任模擬</title>
-    <link rel="stylesheet" href="styles.css?v=20260505-summary-scroll" />
+    <link rel="stylesheet" href="styles.css?v=20260506-window-status" />
   </head>
   <body>
     <main class="app-shell">
@@ -35,7 +35,7 @@
           <div>
             <h2>開始前，設定領養條件</h2>
             <p id="personality-help">幼貓性格未知；領養1歲或3歲以上的貓，可以先知道牠的性格。</p>
-            <p class="setup-note">貓咪最終性格不是固定答案，會隨你的餵食、陪伴、清潔、醫療、訓練和忽略方式慢慢改變。</p>
+            <p class="setup-note">關愛方式會慢慢改變貓咪最終性格；牠不是固定答案，會隨你的餵食、陪伴、清潔、醫療和訓練慢慢形成。</p>
           </div>
 
           <div class="setup-row">
@@ -164,7 +164,7 @@
                 <span>💚 <em>親密</em><strong id="hud-bonding">30</strong></span>
                 <span>⚠ <em>風險</em><strong id="hud-risk">0</strong></span>
               </div>
-              <div id="room-window" class="room-window room-hotspot" data-room-action="lifestyle" role="button" tabindex="0" aria-label="窗戶安全：外出/旅行安排"><span class="window-net"></span><span class="hotspot-label">窗戶安全</span></div>
+              <div id="room-window" class="room-window room-hotspot unsafe" data-room-action="lifestyle" role="button" tabindex="0" aria-label="未裝窗網：高風險"><span class="window-net"></span><span class="hotspot-label">未裝窗網</span></div>
               <div id="room-sofa" class="room-sofa"></div>
               <button id="room-food-bowl" class="room-food-bowl room-hotspot" data-room-action="nutrition" type="button" aria-label="食碗：餵食"><span class="hotspot-label">食碗</span></button>
               <div id="room-cat-tree" class="room-cat-tree room-hotspot hidden" data-room-action="enrichment" role="button" tabindex="0" aria-label="貓爬架：陪玩訓練"><span class="hotspot-label">貓爬架</span></div>
@@ -450,6 +450,6 @@
       </section>
     </main>
 
-    <script src="game.js?v=20260505-summary-scroll"></script>
+    <script src="game.js?v=20260506-window-status"></script>
   </body>
 </html>

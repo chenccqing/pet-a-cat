@@ -628,6 +628,20 @@ select {
   box-shadow: 0 0 0 999px rgba(36, 123, 90, 0);
 }
 
+.room-window.unsafe {
+  border-color: #b84f62;
+}
+
+.room-window.unsafe .window-net {
+  border-color: rgba(184, 79, 98, 0.68);
+}
+
+.room-window.unsafe .hotspot-label {
+  border-color: rgba(184, 79, 98, 0.28);
+  background: #fff0f2;
+  color: #7a3544;
+}
+
 .room-hotspot {
   cursor: pointer;
   outline: 0;
